@@ -9,6 +9,12 @@
 
 - **Interactive DAG** — Explore your pipeline as a navigable directed graph
 - **Stage states** — See at a glance which stages are ✅ valid, 🔄 need rerun, or ⬜ never run
+- **Precise Dependency Coloring** — 🎯 When a stage needs rerun, only the specific dependency that changed is highlighted yellow, not all dependencies. Missing files are red, unchanged files stay green.
+- **Invalidation Diagnostic** — ⚠️ When a code change invalidates a stage, the console shows exactly which file changed and the **transitive import chain** responsible for the reload.
+- **Search & Filter** — Instantly find and filter stages by name or status (valid, changed, frozen, etc.).
+- **Global Stage List** — View all stages in the sidebar, sorted by official DVC execution order.
+- **Frozen Status** — Visual indicators (❄️) for frozen stages.
+- **One-click Navigation** — Click notifications or list items to zoom and center on any stage.
 - **Click-to-inspect** — Click any node to view its command, dependencies, and outputs
 - **Dark theme** — Sleek glassmorphism UI with smooth animations
 - **Zero config** — Just run `dvc-viewer` inside any DVC project
@@ -51,10 +57,10 @@ The web interface opens automatically at [http://localhost:8686](http://localhos
 | `--no-open` | Don't auto-open browser | `false` |
 
 ## 🛠 Requirements
-
-- Python ≥ 3.9
-- DVC installed and accessible in `$PATH`
-- A project with a `dvc.yaml` file
+ 
+ - Python ≥ 3.9
+ - DVC installed and accessible in `$PATH`
+ - A project with a `dvc.yaml` file
 
 ## 🪝 Hooks
 
