@@ -339,7 +339,7 @@ def get_dvc_status(project_dir: str | Path) -> dict[str, Any] | None:
             capture_output=True,
             text=True,
             cwd=str(project_dir),
-            timeout=60,
+            timeout=15,
         )
         if result.returncode != 0:
             # dvc status returns non-zero when there are changes, that's fine
@@ -434,7 +434,7 @@ def detect_running_stage(
         # it might be actually calculating status, which is fine.
         result = subprocess.run(
             [dvc_bin, "status", "--json"],
-            capture_output=True, text=True, cwd=str(project_dir), timeout=10
+            capture_output=True, text=True, cwd=str(project_dir), timeout=5
         )
         if result.returncode == 0:
             # No lock held -> likely not running a repro that blocks us

@@ -3255,13 +3255,29 @@
                         showToast(`Failed: ${failedStage || 'unknown stage'}`, 'error');
                     }
                     setTimeout(hideToast, 4000);
-                    // Note: state cleanup is handled by pollPipeline detecting is_running → false
+                    // Reset button state directly (poll may miss fast failures)
+                    isRunning = false;
+                    _uiLaunchedRun = false;
+                    allBtn.classList.remove('running');
+                    allBtn.disabled = false;
+                    stageBtn.classList.remove('running');
+                    stageBtn.disabled = false;
+                    stopBtn.classList.remove('visible');
+                    // Stop any lingering node animations
+                    if (cy) cy.nodes().forEach(n => {
+                        if (n.scratch('_animating')) stopSingleNodeAnimation(n.id());
+                    });
 
                 } catch (err) {
                     showToast('Error: ' + err.message, 'error');
                     setTimeout(hideToast, 5000);
-                    _uiLaunchedRun = false;
                     isRunning = false;
+                    _uiLaunchedRun = false;
+                    allBtn.classList.remove('running');
+                    allBtn.disabled = false;
+                    stageBtn.classList.remove('running');
+                    stageBtn.disabled = false;
+                    stopBtn.classList.remove('visible');
                 }
             }
 

@@ -7,6 +7,7 @@ plus file inspection endpoints for CSV, images, PDFs, JSON, etc.
 
 from __future__ import annotations
 
+import asyncio
 import csv
 import io
 import json
@@ -87,7 +88,7 @@ async def get_pipeline(force_refresh: bool = Query(False, description="Bypass ca
     if not force_refresh and _pipeline_cache and (now - _pipeline_cache_time) < _PIPELINE_CACHE_TTL:
         return JSONResponse(content=_pipeline_cache)
     try:
-        pipeline = build_pipeline(_project_dir)
+        pipeline = await asyncio.to_thread(build_pipeline, _project_dir)
         data = pipeline_to_dict(pipeline)
         _pipeline_cache = data
         _pipeline_cache_time = now
@@ -482,7 +483,7 @@ async def freeze_stage(request: Request):
 
     # 1. Build pipeline to get dependencies
     try:
-        pipeline = build_pipeline(_project_dir)
+        pipeline = await asyncio.to_thread(build_pipeline, _project_dir)
     except Exception as e:
         return JSONResponse(content={"error": f"Failed to parse pipeline: {e}"}, status_code=500)
 
