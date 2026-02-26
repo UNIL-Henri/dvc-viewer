@@ -93,6 +93,7 @@ EOF
 | Titre | Description |
 |-------|-------------|
 | [Index Tasks](docs/index_tasks.md) | Tâches planifiées et en cours |
+| [Index Hashing](docs/index_hashing.md) | Mécanismes de hash, d'invalidation et portabilité |
 
 ## 🛣️ Roadmap
 

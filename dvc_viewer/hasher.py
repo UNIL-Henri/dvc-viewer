@@ -179,7 +179,10 @@ def _compute_file_hash(path: Path, symbols: set[str] | None = None) -> str:
             return _compute_symbol_level_hash(path, symbols)
         return _compute_python_hash(path)
     try:
-        return hashlib.sha256(path.read_bytes()).hexdigest()
+        content = path.read_bytes()
+        # Normalize CRLF to LF to avoid issues with git core.autocrlf on Windows
+        content = content.replace(b'\r\n', b'\n')
+        return hashlib.sha256(content).hexdigest()
     except Exception as e:
         logger.warning(f"Failed to read {path}: {e}")
         return ""
@@ -497,9 +500,9 @@ def compute_per_file_hashes(
     hashes = {}
     for path in file_paths:
         try:
-            rel_path = str(path.relative_to(project_root))
+            rel_path = path.relative_to(project_root).as_posix()
         except ValueError:
-            rel_path = str(path)
+            rel_path = path.as_posix()
         
         symbols = needed_symbols.get(path)
         h = _compute_file_hash(path, symbols=symbols)
@@ -552,9 +555,9 @@ def compute_aggregate_hash(
     
     for path in sorted_paths:
         try:
-            rel_path = str(path.relative_to(project_root))
+            rel_path = path.relative_to(project_root).as_posix()
         except ValueError:
-            rel_path = str(path)
+            rel_path = path.as_posix()
         
         hasher.update(rel_path.encode("utf-8"))
         h = file_hashes.get(rel_path)
