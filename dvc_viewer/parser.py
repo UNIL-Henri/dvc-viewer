@@ -1173,6 +1173,16 @@ def pipeline_to_dict(pipeline: Pipeline) -> dict[str, Any]:
                 # Re-sort queue to maintain priority for independent branches
                 queue.sort(key=get_order)
 
+    # Compute progress statistics
+    total_stages = len(nodes)
+    completed_stages = sum(1 for n in nodes if n["state"] == "valid")
+    running_index = None
+    if pipeline.running_stage:
+        for i, name in enumerate(execution_order):
+            if name == pipeline.running_stage:
+                running_index = i
+                break
+
     return {
         "nodes": nodes,
         "edges": edges,
@@ -1180,4 +1190,9 @@ def pipeline_to_dict(pipeline: Pipeline) -> dict[str, Any]:
         "is_running": pipeline.is_running,
         "running_stage": pipeline.running_stage,
         "running_pid": pipeline.running_pid,
+        "progress": {
+            "total": total_stages,
+            "completed": completed_stages,
+            "running_index": running_index,
+        },
     }

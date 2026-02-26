@@ -1823,6 +1823,68 @@
             background: rgba(255, 255, 255, 0.12);
             box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
         }
+
+        /* ─── Progress Bar ─── */
+        .progress-bar-container {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
+            display: none;
+        }
+
+        .progress-bar-container.visible {
+            display: block;
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+
+        .progress-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            letter-spacing: 0.03em;
+        }
+
+        .progress-eta {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .progress-track {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.06);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 3px;
+            background: linear-gradient(90deg, #6366f1, #818cf8, #a78bfa);
+            background-size: 200% 100%;
+            animation: progress-shimmer 2s ease infinite;
+            transition: width 0.6s ease;
+        }
+
+        @keyframes progress-shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        .progress-stats {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 4px;
+            font-size: 10px;
+            color: var(--text-muted);
+            font-family: 'JetBrains Mono', monospace;
+        }
     </style>
 </head>
 
@@ -1924,6 +1986,19 @@
                         <option value="running">Running</option>
                         <option value="failed">Failed</option>
                     </select>
+                </div>
+                <div class="progress-bar-container" id="progress-bar-container">
+                    <div class="progress-header">
+                        <span class="progress-label" id="progress-label">0 / 0</span>
+                        <span class="progress-eta" id="progress-eta"></span>
+                    </div>
+                    <div class="progress-track">
+                        <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+                    </div>
+                    <div class="progress-stats">
+                        <span id="progress-percent">0%</span>
+                        <span id="progress-remaining"></span>
+                    </div>
                 </div>
                 <div class="sidebar-node-list-container" id="sidebar-node-list-container">
                     <div class="sidebar-list-header">Pipeline stages</div>
@@ -2730,7 +2805,69 @@
                 if (_pipelineData) renderNodeList(_pipelineData);
             }
 
+            // ─── Progress bar state ───
+            let _runStartTime = null;
+            let _stageCompletionTimes = [];  // timestamps when stages completed
+            let _lastCompletedCount = 0;
+
+            function updateProgressBar(data) {
+                const container = document.getElementById('progress-bar-container');
+                if (!data.is_running || !data.progress) {
+                    container.classList.remove('visible');
+                    _runStartTime = null;
+                    _stageCompletionTimes = [];
+                    _lastCompletedCount = 0;
+                    return;
+                }
+
+                container.classList.add('visible');
+                const { total, completed } = data.progress;
+                const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+                // Track run start
+                if (!_runStartTime) {
+                    _runStartTime = Date.now();
+                    _lastCompletedCount = completed;
+                }
+
+                // Record completion timestamps for new completions
+                if (completed > _lastCompletedCount) {
+                    const now = Date.now();
+                    for (let i = 0; i < completed - _lastCompletedCount; i++) {
+                        _stageCompletionTimes.push(now);
+                    }
+                    _lastCompletedCount = completed;
+                }
+
+                // Update UI
+                document.getElementById('progress-fill').style.width = pct + '%';
+                document.getElementById('progress-label').textContent = `Stage ${completed} / ${total}`;
+                document.getElementById('progress-percent').textContent = pct + '%';
+
+                // Calculate ETA
+                const stagesCompletedDuringRun = completed - (_lastCompletedCount - _stageCompletionTimes.length);
+                const elapsed = Date.now() - _runStartTime;
+                const remaining = total - completed;
+
+                if (_stageCompletionTimes.length > 0 && remaining > 0) {
+                    const avgTimePerStage = elapsed / _stageCompletionTimes.length;
+                    const etaMs = avgTimePerStage * remaining;
+                    const etaDate = new Date(Date.now() + etaMs);
+                    const etaStr = etaDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    const remainMin = Math.ceil(etaMs / 60000);
+                    document.getElementById('progress-eta').textContent = `ETA ${etaStr}`;
+                    document.getElementById('progress-remaining').textContent = `~${remainMin}min`;
+                } else if (remaining > 0) {
+                    document.getElementById('progress-eta').textContent = 'Calculating...';
+                    document.getElementById('progress-remaining').textContent = '';
+                } else {
+                    document.getElementById('progress-eta').textContent = 'Done!';
+                    document.getElementById('progress-remaining').textContent = '';
+                }
+            }
+
             function renderNodeList(data) {
+                updateProgressBar(data);
                 const list = document.getElementById('sidebar-node-list');
                 const scrollPos = list.scrollTop;
                 list.innerHTML = '';

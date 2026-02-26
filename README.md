@@ -13,6 +13,7 @@
 - **Invalidation Diagnostic** — ⚠️ When a code change invalidates a stage, the console shows exactly which file changed and the **transitive import chain** responsible for the reload.
 - **Search & Filter** — Instantly find and filter stages by name or status (valid, changed, frozen, etc.).
 - **Global Stage List** — View all stages in the sidebar, sorted by topological order with stable status-based prioritization (dirty stages first).
+- **Progress Bar & ETA** — ⏱️ During `dvc repro`, a progress bar shows completed stages and estimated completion time based on average execution speed.
 - **Frozen Status** — Visual indicators (❄️) for frozen stages.
 - **One-click Navigation** — Click notifications or list items to zoom and center on any stage.
 - **Smart Code Hashing** — 🧠 Only executable code changes trigger reruns. Comments, docstrings, and whitespace are ignored.
