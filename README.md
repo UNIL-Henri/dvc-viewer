@@ -97,6 +97,7 @@ EOF
 
 ## 🛣️ Roadmap
 
+- [x] [Correction coloration graphe et ordre sidebar (Running vs Needs Rerun)](docs/tasks/fix_dvc_graph.md)
 - [ ] Support pour les pipelines multi-projets
 
 ## 📄 License

@@ -26,6 +26,12 @@ _last_dvc_status: dict[str, Any] | None = None
 # Track stages that failed during a run (since DVC status might not reflect this immediately)
 _failed_stages: set[str] = set()
 
+# Snapshot of dvc.lock at the beginning of a run to detect completed stages by diffing hashes
+_dvc_lock_snapshot: dict[str, dict[str, Any]] | None = None
+
+# Track previous running state to detect transitions
+_was_running: bool = False
+
 
 def mark_stage_started(name: str):
     """Mark a stage as started, clearing any previous failure state."""
@@ -296,20 +302,63 @@ def _expand_foreach(base_name: str, items: Any, do_block: dict, project_dir: str
     return expanded
 
 
-def parse_dvc_lock(project_dir: str | Path) -> set[str]:
-    """Parse dvc.lock to find which stages have been run at least once."""
+def parse_dvc_lock(project_dir: str | Path) -> dict[str, dict[str, Any]]:
+    """Parse dvc.lock and return detailed per-stage hash information.
+
+    Returns a dict mapping stage_name -> {
+        "deps": {path: md5, ...},
+        "outs": {path: md5, ...},
+        "params": {file: {key: value, ...}, ...},
+    }
+    """
     lock_path = Path(project_dir) / "dvc.lock"
     if not lock_path.exists():
-        return set()
+        return {}
 
     with open(lock_path, "r") as f:
-        data = yaml.safe_load(f)
+        try:
+            data = yaml.safe_load(f)
+        except yaml.YAMLError:
+            return {}
 
     if not data:
-        return set()
+        return {}
 
-    stages = data.get("stages", {})
-    return set(stages.keys())
+    stages_data = data.get("stages", {})
+    parsed_stages: dict[str, dict[str, Any]] = {}
+
+    for name, stage_data in stages_data.items():
+        if not isinstance(stage_data, dict):
+            continue
+            
+        stage_info = {
+            "deps": {},
+            "outs": {},
+            "params": {},
+        }
+
+        # Extract deps hashes
+        for dep in stage_data.get("deps", []):
+            path = dep.get("path")
+            md5 = dep.get("md5") or dep.get("etag") or dep.get("checksum")
+            if path and md5:
+                stage_info["deps"][path] = md5
+
+        # Extract outs hashes
+        for out in stage_data.get("outs", []):
+            path = out.get("path")
+            md5 = out.get("md5") or out.get("etag") or out.get("checksum")
+            if path and md5:
+                stage_info["outs"][path] = md5
+
+        # Extract params
+        params = stage_data.get("params", {})
+        if params:
+            stage_info["params"] = params
+
+        parsed_stages[name] = stage_info
+
+    return parsed_stages
 
 
 def resolve_dvc_bin(project_dir: str | Path) -> str:
@@ -360,6 +409,61 @@ def get_dvc_status(project_dir: str | Path) -> dict[str, Any] | None:
         return None
     except (subprocess.TimeoutExpired, json.JSONDecodeError):
         return None
+
+
+def _check_stage_hashes_on_disk(
+    project_dir: Path,
+    stage_lock_info: dict[str, Any],
+) -> bool:
+    """Check if the MD5 hashes in dvc.lock match the actual files on disk.
+
+    Returns True if all deps/outs match (stage is valid).
+    """
+    import hashlib
+
+    def compute_md5(path: Path) -> str | None:
+        if not path.exists() or path.is_dir():
+            return None
+        # Optimization: for very large files, this could be slow
+        # but for correctness we follow the "no cheating" rule.
+        hash_md5 = hashlib.md5()
+        try:
+            with open(path, "rb") as f:
+                for chunk in iter(lambda: f.read(4096), b""):
+                    hash_md5.update(chunk)
+            return hash_md5.hexdigest()
+        except OSError:
+            return None
+
+    # Check dependencies
+    for path_str, expected_md5 in stage_lock_info.get("deps", {}).items():
+        if ":" in path_str: continue # Skip params in deps if any
+        full_path = project_dir / path_str
+        if not full_path.exists():
+            return False
+        if full_path.is_dir():
+            # For directories, DVC uses a .dir hash. 
+            # Recalculating it exactly like DVC is complex.
+            # Minimal check: if it exists, assume OK for now or skip.
+            continue
+        
+        actual_md5 = compute_md5(full_path)
+        if actual_md5 != expected_md5:
+            return False
+
+    # Check outputs
+    for path_str, expected_md5 in stage_lock_info.get("outs", {}).items():
+        full_path = project_dir / path_str
+        if not full_path.exists():
+            return False
+        if full_path.is_dir():
+            continue
+            
+        actual_md5 = compute_md5(full_path)
+        if actual_md5 != expected_md5:
+            return False
+
+    return True
 
 
 def _extract_pids_from_locks(lock_section: dict) -> set[int]:
@@ -556,7 +660,7 @@ def detect_running_stage(
 
 def build_pipeline(project_dir: str | Path) -> Pipeline:
     """Build the full pipeline DAG from a DVC project directory."""
-    global _last_dvc_status
+    global _last_dvc_status, _dvc_lock_snapshot, _was_running
     project_dir = Path(project_dir)
     pipeline = Pipeline()
 
@@ -564,88 +668,158 @@ def build_pipeline(project_dir: str | Path) -> Pipeline:
     stages = parse_dvc_yaml(project_dir)
     pipeline.stages = stages
 
-    # 2. Find which stages have been executed (have lock entries)
-    locked_stages = parse_dvc_lock(project_dir)
+    # 2. Get detailed lock info (hashes)
+    lock_data = parse_dvc_lock(project_dir)
+    locked_stage_names = set(lock_data.keys())
 
     # 3. Detect if a DVC run is in progress
     is_running, running_stage, running_pid = detect_running_stage(
-        project_dir, stages, locked_stages
+        project_dir, stages
     )
     pipeline.is_running = is_running
     pipeline.running_stage = running_stage
     pipeline.running_pid = running_pid
 
-    # 3 (already done above). locked_stages used for both detection and state.
+    # 4. Handle snapshot transitions
+    if is_running and not _was_running:
+        # Start of a run: take snapshot
+        _dvc_lock_snapshot = lock_data
+    elif not is_running and _was_running:
+        # End of a run: clear snapshot
+        _dvc_lock_snapshot = None
+    
+    _was_running = is_running
 
-    # 4. Get current status (which stages need re-running)
-    #    Skip dvc status if a run is in progress (the lock would make it fail)
-    #    but use the last known status to preserve needs_rerun information.
+    # 5. Get current status (from DVC CLI if not running)
     if is_running:
-        status = _last_dvc_status  # use cached status from before the run
+        status = _last_dvc_status  # use cached status from before the run (for dirty info)
     else:
         status = get_dvc_status(project_dir)
         if status is not None:
             _last_dvc_status = status  # cache for use during runs
 
-    # Store the raw status in the pipeline for use in pipeline_to_dict
     pipeline.dvc_status = status
+    stages_needing_rerun_cli = set(status.keys()) if status else set()
 
-    if status is None:
-        # DVC status completely unavailable (DVC not found, timeout, etc.)
-        # Use dvc.lock as best-effort fallback.
-        if is_running:
-            for name, stage in pipeline.stages.items():
-                if name == running_stage:
-                    stage.state = "running"
-                elif name in locked_stages:
-                    # Conservative fallback: if we don't know the status,
-                    # assume needs_rerun until proven otherwise.
+    # 6. Assign states
+    for name, stage in pipeline.stages.items():
+        if name == running_stage:
+            stage.state = "running"
+        elif name in _failed_stages:
+            stage.state = "failed"
+        elif name not in lock_data:
+            stage.state = "never_run"
+        elif is_running:
+            # During a run, use Snapshot/Diff logic
+            if _dvc_lock_snapshot and name in _dvc_lock_snapshot:
+                # Compare current lock hash with snapshot
+                curr_hashes = lock_data.get(name, {})
+                snap_hashes = _dvc_lock_snapshot.get(name, {})
+                
+                # If any output hash changed, it means the stage finished successfully in this run
+                if curr_hashes.get("outs") != snap_hashes.get("outs") and curr_hashes.get("outs"):
+                    stage.state = "valid"
+                elif name in stages_needing_rerun_cli:
                     stage.state = "needs_rerun"
                 else:
-                    stage.state = "never_run"
-        else:
-            # Not running, but DVC couldn't provide status.
-            # Default to needs_rerun so the user knows something is off.
-            for name, stage in pipeline.stages.items():
-                if name in _failed_stages:
-                    stage.state = "failed"
-                elif name in locked_stages:
-                    stage.state = "needs_rerun"
-                else:
-                    stage.state = "never_run"
-    else:
-        stages_needing_rerun = set(status.keys()) if status else set()
-
-        for name, stage in pipeline.stages.items():
-            if name == running_stage:
-                stage.state = "running"
-            elif name in _failed_stages:
-                stage.state = "failed"
-            elif name not in locked_stages:
-                stage.state = "never_run"
-            elif name in stages_needing_rerun:
-                stage.state = "needs_rerun"
+                    stage.state = "valid"
             else:
-                stage.state = "valid"
+                # No snapshot available (late join): Check MD5 on disk
+                if _check_stage_hashes_on_disk(project_dir, lock_data[name]):
+                    stage.state = "valid"
+                else:
+                    stage.state = "needs_rerun"
+        else:
+            # Normal mode: use DVC status CLI if available
+            if status is not None:
+                if name in stages_needing_rerun_cli:
+                    stage.state = "needs_rerun"
+                else:
+                    stage.state = "valid"
+            else:
+                # Conservative fallback if status call failed but not running
+                stage.state = "needs_rerun"
 
     # Post-validation: Override "valid" to "needs_rerun" if any required file
-    # (dep or out) is missing from disk. DVC status only checks changes,
-    # not existence.
+    # (dep or out) is missing from disk.
     for name, stage in pipeline.stages.items():
         if stage.state != "valid":
             continue
-        # Check deps, outs, metrics, plots, and hydra_config
         all_files = stage.deps + stage.outs + stage.metrics + stage.plots
         if stage.hydra_config:
             all_files.append(stage.hydra_config)
             
         for f in all_files:
-            if ":" in f: continue  # Skip params like 'params.yaml:lr'
+            if ":" in f: continue
             full_path = project_dir / f
-            exists = full_path.exists()
-            if not exists:
+            if not full_path.exists():
                 stage.state = "needs_rerun"
                 break
+
+    # 7. Build edges
+    output_to_stage: dict[str, str] = {}
+    for name, stage in stages.items():
+        for out in stage.outs:
+            output_to_stage[out] = name
+        for metric in stage.metrics:
+            output_to_stage[metric] = name
+
+    for name, stage in stages.items():
+        for dep in stage.deps:
+            if dep in output_to_stage:
+                source_stage = output_to_stage[dep]
+                if source_stage != name:
+                    pipeline.edges.append(
+                        Edge(source=source_stage, target=name, label=dep)
+                    )
+            else:
+                for out, source_stage in output_to_stage.items():
+                    if dep.startswith(out.rstrip("/") + "/"):
+                        if source_stage != name:
+                            pipeline.edges.append(
+                                Edge(source=source_stage, target=name, label=dep)
+                            )
+                        break
+
+    # 8. Propagate needs_rerun transitively through the DAG.
+    downstream: dict[str, list[str]] = {}
+    for edge in pipeline.edges:
+        downstream.setdefault(edge.source, []).append(edge.target)
+
+    if is_running and running_stage:
+        queue = [running_stage]
+        visited_descendants = set()
+        while queue:
+            current = queue.pop(0)
+            for child in downstream.get(current, []):
+                if child not in visited_descendants:
+                    visited_descendants.add(child)
+                    queue.append(child)
+                    child_stage = pipeline.stages.get(child)
+                    if child_stage:
+                        child_stage.state = "needs_rerun"
+
+    dirty = {
+        name
+        for name, stage in pipeline.stages.items()
+        if (stage.state in ("needs_rerun", "never_run", "failed", "running"))
+        and not stage.always_changed
+    }
+    
+    visited: set[str] = set()
+    queue = list(dirty)
+    while queue:
+        current = queue.pop(0)
+        if current in visited: continue
+        visited.add(current)
+        for child in downstream.get(current, []):
+            child_stage = pipeline.stages.get(child)
+            if child_stage and child_stage.state == "valid":
+                child_stage.state = "needs_rerun"
+            if child not in visited:
+                queue.append(child)
+
+    return pipeline
 
     # 5. Build edges: if stage B depends on a file that is stage A's output
     output_to_stage: dict[str, str] = {}
@@ -1055,14 +1229,16 @@ def pipeline_to_dict(pipeline: Pipeline) -> dict[str, Any]:
         
         # Priority: dirty states (0) before valid/frozen states (1)
         # This ensures that independent branches show dirty stages before clean ones
+        # Priority: ensure logical order in sidebar
+        # Lower score = higher priority (appears first)
         state_priority = {
             "running": 0,
-            "failed": 0,
-            "needs_rerun": 0,
-            "never_run": 0,
-            "valid": 1,
+            "failed": 1,
+            "needs_rerun": 2,
+            "never_run": 3,
+            "valid": 4,
         }
-        return (state_priority.get(stage.state, 1), stage.definition_order)
+        return (state_priority.get(stage.state, 5), stage.definition_order)
 
     queue = sorted([node_id for node_id, deg in in_degree.items() if deg == 0], key=get_order)
     execution_order = []
