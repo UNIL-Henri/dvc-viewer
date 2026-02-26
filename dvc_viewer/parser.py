@@ -1143,12 +1143,11 @@ def pipeline_to_dict(pipeline: Pipeline) -> dict[str, Any]:
     def get_order(node_id):
         stage = pipeline.stages.get(node_id)
         if not stage:
-            return (1, 999999)
+            return (999999, 5)
         
-        # Priority: dirty states (0) before valid/frozen states (1)
-        # This ensures that independent branches show dirty stages before clean ones
-        # Priority: ensure logical order in sidebar
-        # Lower score = higher priority (appears first)
+        # Primary sort: definition_order preserves dvc.yaml structure
+        # Secondary sort: state_priority ensures running appears before needs_rerun
+        # when two stages have the same definition_order (tiebreaker only)
         state_priority = {
             "running": 0,
             "failed": 1,
@@ -1156,7 +1155,7 @@ def pipeline_to_dict(pipeline: Pipeline) -> dict[str, Any]:
             "never_run": 3,
             "valid": 4,
         }
-        return (state_priority.get(stage.state, 5), stage.definition_order)
+        return (stage.definition_order, state_priority.get(stage.state, 5))
 
     queue = sorted([node_id for node_id, deg in in_degree.items() if deg == 0], key=get_order)
     execution_order = []
