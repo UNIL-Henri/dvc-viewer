@@ -213,6 +213,25 @@ def test_symbol_chain_3_levels(tmp_path):
     assert hash1 != hash3
 
 
+def test_non_python_string_refs_excluded(tmp_path):
+    """Non-Python files referenced as string literals must NOT appear in transitive deps."""
+    # Create a dvc.yaml and a config file in the project
+    (tmp_path / "dvc.yaml").write_text("stages:\n  train:\n    cmd: python train.py\n")
+    (tmp_path / "config.yaml").write_text("lr: 0.01\n")
+
+    # Script references both files as strings
+    train = tmp_path / "train.py"
+    train.write_text('CONFIG = "config.yaml"\nDVC = "dvc.yaml"\nprint("hello")\n')
+
+    clear_caches()
+    deps, graph, names = find_transitive_dependencies(train, tmp_path)
+
+    dep_names = {p.name for p in deps}
+    assert "train.py" in dep_names
+    assert "dvc.yaml" not in dep_names, "dvc.yaml should not be a transitive dep"
+    assert "config.yaml" not in dep_names, "config.yaml should not be a transitive dep"
+
+
 def test_hash_deterministic_golden(tmp_path):
     """
     Vérifie que le hash produit pour un code donné est strictement identique
