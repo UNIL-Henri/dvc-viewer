@@ -226,13 +226,15 @@ def detect_running_stage(
     return False, None, None
 
 
-def run_dvc_repro(project_dir: str | Path, dvc_bin: str, stage: str | None = None, force: bool = False) -> tuple[bool, int, str]:
+def run_dvc_repro(project_dir: str | Path, dvc_bin: str, stage: str | None = None, force: bool = False, keep_going: bool = False) -> tuple[bool, int, str]:
     """Run `dvc repro` synchronously and return (success, returncode, logs)."""
     cmd = [dvc_bin, "repro"]
     if stage:
         cmd.append(stage)
     if force:
         cmd.append("--force")
+    if keep_going:
+        cmd.append("--keep-going")
 
     try:
         result = subprocess.run(
@@ -246,13 +248,15 @@ def run_dvc_repro(project_dir: str | Path, dvc_bin: str, stage: str | None = Non
         return False, -1, "Error: Execution timed out."
 
 
-def start_dvc_repro(project_dir: str | Path, dvc_bin: str, stage: str | None = None, force: bool = False) -> subprocess.Popen:
+def start_dvc_repro(project_dir: str | Path, dvc_bin: str, stage: str | None = None, force: bool = False, keep_going: bool = False) -> subprocess.Popen:
     """Start `dvc repro` as a background process."""
     cmd = [dvc_bin, "repro"]
     if stage:
         cmd.append(stage)
     if force:
         cmd.append("--force")
+    if keep_going:
+        cmd.append("--keep-going")
 
     return subprocess.Popen(
         cmd,

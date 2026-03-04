@@ -14,6 +14,7 @@
 - **Search & Filter** — Instantly find and filter stages by name or status (valid, changed, frozen, etc.).
 - **Global Stage List** — View all stages in the sidebar, sorted by topological order with stable status-based prioritization (dirty stages first).
 - **Progress Bar & ETA** — ⏱️ During `dvc repro`, a progress bar shows completed stages and estimated completion time based on average execution speed.
+- **DVC `--keep-going` Mode** — 🚀 The "Run All" button now supports `--keep-going`. If a stage fails, the pipeline continues with independent branches, and all failed nodes are highlighted in red.
 - **Frozen Status** — Visual indicators (❄️) for frozen stages.
 - **One-click Navigation** — Click notifications or list items to zoom and center on any stage.
 - **Smart Code Hashing** — 🧠 Only executable code changes trigger reruns. Comments, docstrings, and whitespace are ignored. Stable across Python versions (3.9+) via pure AST unparsing.
@@ -124,6 +125,7 @@ dvc-viewer/
 
 - [x] [Isolation des interactions DVC (dvc_client.py)](docs/tasks/fix-rwlock-corruption.md)
 - [x] [Correction coloration graphe et ordre sidebar](docs/tasks/fix_dvc_graph.md)
+- [x] [Mode DVC `--keep-going` (Échecs multiples)](docs/tasks/dvc-keep-going.md)
 - [ ] Support pour les pipelines multi-projets
 
 ## 📄 License

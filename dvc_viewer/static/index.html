@@ -3846,7 +3846,11 @@
                             case 'done':
                                 pipelineSuccess = data.success;
                                 pipelineCancelled = data.cancelled || false;
-                                if (data.failed_stage) failedStage = data.failed_stage;
+                                if (data.failed_stages && data.failed_stages.length > 0) {
+                                    failedStage = data.failed_stages.join(', ');
+                                } else if (data.failed_stage) {
+                                    failedStage = data.failed_stage;
+                                }
                                 break;
                         }
                     }

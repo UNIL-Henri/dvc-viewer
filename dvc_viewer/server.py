@@ -602,8 +602,8 @@ async def run_pipeline(request: Request):
     body = await request.json()
     stage = body.get("stage")  # None = run all
     force = body.get("force", False)
-
-    success, returncode, logs = run_dvc_repro(_project_dir, _dvc_bin, stage, force)
+    keep_going = stage is None
+    success, returncode, logs = run_dvc_repro(_project_dir, _dvc_bin, stage, force, keep_going)
     
     if returncode == 127: # FileNotFoundError
         return JSONResponse(content={
@@ -621,27 +621,27 @@ async def run_pipeline(request: Request):
             "stage": stage,
         }, status_code=500)
 
-        # Try to extract the failed stage from DVC error output
-        failed_stage = None
-        if not success:
-            # DVC typically outputs "ERROR: failed to reproduce '<stage>'"
-            import re
-            match = re.search(r"failed to reproduce '(\w+)'", logs)
+    # Try to extract the failed stage from DVC error output
+    failed_stage = None
+    if not success:
+        # DVC typically outputs "ERROR: failed to reproduce '<stage>'"
+        import re
+        match = re.search(r"failed to reproduce '([\w@.-]+)'", logs)
+        if match:
+            failed_stage = match.group(1)
+        else:
+            # Also look for "stage '<name>' failed"
+            match = re.search(r"Stage '([\w@.-]+)' failed", logs, re.IGNORECASE)
             if match:
                 failed_stage = match.group(1)
-            else:
-                # Also look for "stage '<name>' failed"
-                match = re.search(r"Stage '(\w[\w-]*)' failed", logs, re.IGNORECASE)
-                if match:
-                    failed_stage = match.group(1)
 
-        return JSONResponse(content={
-            "success": success,
-            "returncode": result.returncode,
-            "logs": logs,
-            "failed_stage": failed_stage,
-            "stage": stage,
-        })
+    return JSONResponse(content={
+        "success": success,
+        "returncode": returncode,
+        "logs": logs,
+        "failed_stage": failed_stage,
+        "stage": stage,
+    })
 
 
 @app.get("/api/run-stream")
@@ -667,17 +667,18 @@ async def run_pipeline_stream(
     if force:
         cmd.append("--force")
 
+    keep_going = stage is None
     def sse_event(event: str, data: dict) -> str:
         return f"event: {event}\ndata: {json.dumps(data)}\n\n"
 
     def generate():
         current_stage = None
         success = True
-        failed_stage = None
+        failed_stages = []
 
         global _running_proc
         try:
-            proc = start_dvc_repro(_project_dir, _dvc_bin, stage, force)
+            proc = start_dvc_repro(_project_dir, _dvc_bin, stage, force, keep_going)
             _running_proc = proc
         except FileNotFoundError:
             yield sse_event("done", {
@@ -726,8 +727,10 @@ async def run_pipeline_stream(
             # Check for failures
             m_fail = re_failed.search(line) or re_failed2.search(line)
             if m_fail:
-                failed_stage = m_fail.group(1)
-                mark_stage_failed(failed_stage)
+                f_stage = m_fail.group(1)
+                mark_stage_failed(f_stage)
+                if f_stage not in failed_stages:
+                    failed_stages.append(f_stage)
                 success = False
 
             # Send log line
@@ -742,7 +745,7 @@ async def run_pipeline_stream(
 
         # Close final stage
         if current_stage:
-            stage_ok = proc.returncode == 0 and (failed_stage != current_stage)
+            stage_ok = proc.returncode == 0 and (current_stage not in failed_stages)
             if stage_ok:
                 mark_stage_complete(current_stage)
             yield sse_event("stage_done", {
@@ -756,7 +759,8 @@ async def run_pipeline_stream(
 
         yield sse_event("done", {
             "success": success,
-            "failed_stage": failed_stage,
+            "failed_stage": failed_stages[0] if failed_stages else None,
+            "failed_stages": failed_stages,
             "cancelled": cancelled,
         })
 
