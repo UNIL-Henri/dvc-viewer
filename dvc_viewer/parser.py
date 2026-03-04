@@ -26,6 +26,14 @@ _last_dvc_status: dict[str, Any] | None = None
 # Track stages that failed during a run (since DVC status might not reflect this immediately)
 _failed_stages: set[str] = set()
 
+from .dvc_client import (
+    resolve_dvc_bin,
+    get_dvc_status,
+    detect_running_stage,
+    StageFiles,
+)
+from .git_client import git_show_file
+
 # Snapshot of dvc.lock at the beginning of a run to detect completed stages by diffing hashes
 _dvc_lock_snapshot: dict[str, dict[str, Any]] | None = None
 
@@ -134,9 +142,6 @@ def _resolve_params(item: Any) -> list[str]:
 
 # Regex to extract --config-name or -cn value from a command string
 _RE_CONFIG_NAME = re.compile(r"(?:--config-name|--config_name|-cn)\s+(\S+)")
-
-# Regex to extract PID from DVC lock error message
-_RE_LOCK_PID = re.compile(r"\(PID (\d+)\)")
 
 
 def _extract_hydra_config(cmd: str, project_dir: Path) -> str | None:
@@ -361,64 +366,7 @@ def parse_dvc_lock(project_dir: str | Path) -> dict[str, dict[str, Any]]:
     return parsed_stages
 
 
-def resolve_dvc_bin(project_dir: str | Path) -> str:
-    """Find the DVC binary, checking project .venv first, then system PATH."""
-    # 1. Project's own .venv (most reliable — avoids broken pyenv shims)
-    project_venv = Path(project_dir) / ".venv" / "bin" / "dvc"
-    if project_venv.exists():
-        return str(project_venv)
-    # 2. System PATH
-    found = shutil.which("dvc")
-    if found:
-        return found
-    # 3. Same venv as dvc-viewer itself
-    own_venv = Path(sys.executable).parent / "dvc"
-    if own_venv.exists():
-        return str(own_venv)
-    return "dvc"  # fallback
-
-
-def get_dvc_status(project_dir: str | Path) -> dict[str, Any] | None:
-    """Run `dvc status --json` and return parsed output.
-
-    Returns None if the command could not be executed (DVC not found, timeout,
-    or DVC lock held by another process such as a running ``dvc repro``).
-    Returns {} if DVC reports no changes.
-    """
-    project_dir = Path(project_dir)
-    # Pre-emptively check/clean rwlock before calling DVC to avoid corruption errors
-    _safe_read_rwlock(project_dir / ".dvc" / "tmp" / "rwlock")
-
-    dvc_bin = resolve_dvc_bin(project_dir)
-    try:
-        result = subprocess.run(
-            [dvc_bin, "status", "--json"],
-            capture_output=True,
-            text=True,
-            cwd=str(project_dir),
-            timeout=15,
-        )
-        if result.returncode != 0:
-            # dvc status returns non-zero when there are changes, that's fine
-            # Only truly fail if there's no output at all
-            if result.stdout.strip():
-                try:
-                    return json.loads(result.stdout)
-                except json.JSONDecodeError:
-                    return None
-            # No stdout → DVC error (e.g. lock held by running dvc repro)
-            return None
-        output = result.stdout.strip()
-        if not output or output == "{}":
-            return {}
-        try:
-            return json.loads(output)
-        except json.JSONDecodeError:
-            return None
-    except FileNotFoundError:
-        return None
-    except subprocess.TimeoutExpired:
-        return None
+    return True
 
 
 def _check_stage_hashes_on_disk(
@@ -476,197 +424,7 @@ def _check_stage_hashes_on_disk(
     return True
 
 
-def _safe_read_rwlock(rwlock_path: Path) -> dict | None:
-    """Read and parse the rwlock JSON file directly, with retries and cleanup.
-
-    This avoids calling 'dvc status' which would trigger DVC's own rwlock logic
-    and potentially cause corruption through concurrent writes.
-    """
-    import time
-    if not rwlock_path.exists():
-        return None
-
-    for attempt in range(2):
-        try:
-            raw = rwlock_path.read_text(encoding="utf-8").strip()
-            if not raw:
-                # File exists but is empty -> race condition or corruption
-                if attempt == 0:
-                    time.sleep(0.2)
-                    continue
-                break
-            return json.loads(raw)
-        except (json.JSONDecodeError, OSError):
-            if attempt == 0:
-                time.sleep(0.2)
-                continue
-            break
-
-    # If we are here, the file is corrupted or empty after retry.
-    # Check if a repro is actually running to decide if we should delete it.
-    pgrep_res = subprocess.run(["pgrep", "-f", "dvc repro"], capture_output=True)
-    if pgrep_res.returncode != 0:
-        # No dvc repro running -> file is definitely orphan and corrupted
-        try:
-            rwlock_path.unlink()
-        except OSError:
-            pass
-    return None
-
-
-def _extract_pids_from_locks(lock_section: dict) -> set[int]:
-    """Extract all unique PIDs from a rwlock section (read or write)."""
-    pids: set[int] = set()
-    for _path, info in lock_section.items():
-        if isinstance(info, list):
-            for entry in info:
-                if isinstance(entry, dict) and "pid" in entry:
-                    pids.add(entry["pid"])
-        elif isinstance(info, dict) and "pid" in info:
-            pids.add(info["pid"])
-    return pids
-
-
-def _is_dvc_process_alive(pid: int) -> bool:
-    """Check if a PID is alive AND is a 'dvc repro' process (not PID reuse)."""
-    try:
-        os.kill(pid, 0)
-    except (ProcessLookupError, PermissionError):
-        return False
-
-    if sys.platform.startswith("linux"):
-        # Check it's actually a 'dvc repro' process (not just any process
-        # with 'dvc' in its path, e.g. 'dvc-viewer hash')
-        try:
-            cmdline_path = f"/proc/{pid}/cmdline"
-            if os.path.exists(cmdline_path):
-                with open(cmdline_path, "rb") as f:
-                    cmdline_raw = f.read()
-                # cmdline is null-byte separated
-                cmdline_parts = cmdline_raw.decode("utf-8", errors="replace").split("\x00")
-                # Look for 'dvc' and 'repro' as separate arguments
-                # e.g. ['/path/to/dvc', 'repro'] or ['python', '-m', 'dvc', 'repro']
-                has_dvc = any("dvc" in part and "dvc-viewer" not in part for part in cmdline_parts)
-                has_repro = "repro" in cmdline_parts
-                if not (has_dvc and has_repro):
-                    return False
-        except OSError:
-            pass
-        # Check for zombie
-        try:
-            stat_path = f"/proc/{pid}/stat"
-            if os.path.exists(stat_path):
-                with open(stat_path, "r") as f:
-                    stat_parts = f.read().split()
-                if len(stat_parts) > 2 and stat_parts[2] == "Z":
-                    return False
-        except (OSError, IndexError):
-            pass
-
     return True
-
-
-def detect_running_stage(
-    project_dir: str | Path,
-    stages: dict[str, Stage],
-    locked_stages: set[str] | None = None,
-) -> tuple[bool, str | None, int | None]:
-    """Detect if a DVC run is in progress.
-
-    Returns (is_running, running_stage_name, pid).
-
-    Strategy:
-    1. Check the rwlock file directly (safe, read-only).
-    2. Fallback to pgrep if no rwlock entry found.
-    3. ONLY as a last resort, run `dvc status` if we still think it might be locked.
-    """
-    project_dir = Path(project_dir)
-    rwlock_path = project_dir / ".dvc" / "tmp" / "rwlock"
-    live_pid: int | None = None
-    running_stage: str | None = None
-
-    # --- Step 1: Safe direct rwlock check ---
-    lock_data = _safe_read_rwlock(rwlock_path)
-    if lock_data:
-        read_locks: dict = lock_data.get("read", {})
-        write_locks: dict = lock_data.get("write", {})
-        project_path = project_dir.resolve()
-
-        # Find any alive PID in the lock file
-        all_pids = _extract_pids_from_locks(read_locks) | _extract_pids_from_locks(write_locks)
-        for pid in all_pids:
-            if _is_dvc_process_alive(pid):
-                live_pid = pid
-                # Identify the stage
-                # Priority: write locks (outputs)
-                live_write_files: set[str] = set()
-                for locked_path, info_list in write_locks.items():
-                    entries = info_list if isinstance(info_list, list) else [info_list]
-                    for entry in entries:
-                        if isinstance(entry, dict) and entry.get("pid") == pid:
-                            try:
-                                rel = str(Path(locked_path).resolve().relative_to(project_path))
-                            except ValueError:
-                                rel = locked_path
-                            live_write_files.add(rel)
-
-                if live_write_files:
-                    for name, stage in stages.items():
-                        stage_outputs = set(stage.outs) | set(stage.metrics) | set(stage.plots)
-                        if stage_outputs & live_write_files:
-                            running_stage = name
-                            break
-                
-                # Fallback: read locks (deps)
-                if running_stage is None:
-                    live_read_files: set[str] = set()
-                    for locked_path, info_list in read_locks.items():
-                        entries = info_list if isinstance(info_list, list) else [info_list]
-                        for entry in entries:
-                            if isinstance(entry, dict) and entry.get("pid") == pid:
-                                try:
-                                    rel = str(Path(locked_path).resolve().relative_to(project_path))
-                                except ValueError:
-                                    rel = locked_path
-                                live_read_files.add(rel)
-                    
-                    if live_read_files:
-                        best_match: str | None = None
-                        best_count = 0
-                        for name, stage in stages.items():
-                            stage_deps = set(stage.deps)
-                            overlap = stage_deps & live_read_files
-                            if len(overlap) > best_count:
-                                best_count = len(overlap)
-                                best_match = name
-                        running_stage = best_match
-                
-                if live_pid:
-                    return True, running_stage, live_pid
-
-    # --- Step 2: Fallback to pgrep ---
-    candidate_pids: set[int] = set()
-    try:
-        pgrep_res = subprocess.run(
-            ["pgrep", "-f", "dvc repro"],
-            capture_output=True, text=True, timeout=2,
-        )
-        if pgrep_res.returncode == 0:
-            for line in pgrep_res.stdout.strip().splitlines():
-                if line.strip().isdigit():
-                    pid = int(line.strip())
-                    if pid != os.getpid() and _is_dvc_process_alive(pid):
-                        candidate_pids.add(pid)
-    except (subprocess.TimeoutExpired, OSError):
-        pass
-
-    if candidate_pids:
-        return True, None, list(candidate_pids)[0]
-
-    # --- Step 3: Last resort dvc status (only if we suspect a hidden lock) ---
-    # We skip this if we are confident no dvc repro is running (Step 2 empty).
-    # This prevents the most frequent cause of corruption.
-    return False, None, None
 
 
 def build_pipeline(project_dir: str | Path) -> Pipeline:
@@ -683,8 +441,12 @@ def build_pipeline(project_dir: str | Path) -> Pipeline:
     lock_data = parse_dvc_lock(project_dir)
 
     # 3. Detect if a DVC run is in progress
+    stages_files = {
+        name: StageFiles(s.deps, s.outs, s.metrics, s.plots)
+        for name, s in stages.items()
+    }
     is_running, running_stage, running_pid = detect_running_stage(
-        project_dir, stages
+        project_dir, stages_files
     )
     pipeline.is_running = is_running
     pipeline.running_stage = running_stage
@@ -832,54 +594,6 @@ def build_pipeline(project_dir: str | Path) -> Pipeline:
     return pipeline
 
 
-# ─── Git history helpers ─────────────────────────────────────────────────
-
-
-def _git_show_file(project_dir: Path, commit: str, path: str) -> str | None:
-    """Read a file at a specific git commit via `git show`. Returns None if missing."""
-    try:
-        result = subprocess.run(
-            ["git", "show", f"{commit}:{path}"],
-            capture_output=True, text=True,
-            cwd=str(project_dir), timeout=10,
-        )
-        if result.returncode != 0:
-            return None
-        return result.stdout
-    except (subprocess.TimeoutExpired, OSError):
-        return None
-
-
-def get_commit_list(project_dir: str | Path, limit: int = 100) -> list[dict]:
-    """Return the git commit history for the repository."""
-    project_dir = Path(project_dir)
-    try:
-        result = subprocess.run(
-            ["git", "log", f"-{limit}", "--pretty=format:%H|%h|%s|%an|%ai"],
-            capture_output=True, text=True,
-            cwd=str(project_dir), timeout=15,
-        )
-        if result.returncode != 0:
-            raise RuntimeError(f"git log failed: {result.stderr.strip()}")
-
-        commits = []
-        for line in result.stdout.strip().split("\n"):
-            if not line.strip():
-                continue
-            parts = line.split("|", 4)
-            if len(parts) >= 5:
-                commits.append({
-                    "hash": parts[0],
-                    "short_hash": parts[1],
-                    "message": parts[2],
-                    "author": parts[3],
-                    "date": parts[4],
-                })
-        return commits
-    except (subprocess.TimeoutExpired, OSError) as e:
-        raise RuntimeError(f"Failed to list commits: {e}")
-
-
 def _parse_dvc_yaml_from_data(
     data: dict,
     params: dict,
@@ -938,7 +652,7 @@ def build_pipeline_at_commit(project_dir: str | Path, commit: str) -> Pipeline:
     pipeline = Pipeline()
 
     # 1. Read dvc.yaml at commit
-    dvc_yaml_content = _git_show_file(project_dir, commit, "dvc.yaml")
+    dvc_yaml_content = git_show_file(project_dir, commit, "dvc.yaml")
     if dvc_yaml_content is None:
         raise FileNotFoundError(f"No dvc.yaml found at commit {commit}")
 
@@ -946,7 +660,7 @@ def build_pipeline_at_commit(project_dir: str | Path, commit: str) -> Pipeline:
 
     # 2. Load params for interpolation (params.yaml + inline vars at commit)
     params: dict = {}
-    params_content = _git_show_file(project_dir, commit, "params.yaml")
+    params_content = git_show_file(project_dir, commit, "params.yaml")
     if params_content:
         loaded = yaml.safe_load(params_content) or {}
         params.update(loaded)
@@ -958,7 +672,7 @@ def build_pipeline_at_commit(project_dir: str | Path, commit: str) -> Pipeline:
             if isinstance(var_entry, dict):
                 params.update(var_entry)
             elif isinstance(var_entry, str):
-                var_content = _git_show_file(project_dir, commit, var_entry)
+                var_content = git_show_file(project_dir, commit, var_entry)
                 if var_content:
                     loaded = yaml.safe_load(var_content) or {}
                     params.update(loaded)
@@ -968,7 +682,7 @@ def build_pipeline_at_commit(project_dir: str | Path, commit: str) -> Pipeline:
     pipeline.stages = stages
 
     # 4. Read dvc.lock at commit to determine which stages were executed
-    lock_content = _git_show_file(project_dir, commit, "dvc.lock")
+    lock_content = git_show_file(project_dir, commit, "dvc.lock")
     locked_stages: set[str] = set()
     if lock_content:
         lock_data = yaml.safe_load(lock_content) or {}

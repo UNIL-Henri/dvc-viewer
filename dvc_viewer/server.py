@@ -25,7 +25,21 @@ from fastapi.responses import HTMLResponse, JSONResponse, FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 import yaml
 
-from .parser import build_pipeline, build_pipeline_at_commit, get_commit_list, pipeline_to_dict, resolve_dvc_bin, mark_stage_complete, mark_stage_failed, mark_stage_started
+from .parser import (
+    build_pipeline,
+    build_pipeline_at_commit,
+    pipeline_to_dict,
+    mark_stage_complete,
+    mark_stage_failed,
+    mark_stage_started,
+)
+from .git_client import get_commit_list
+from .dvc_client import (
+    resolve_dvc_bin,
+    run_dvc_repro,
+    start_dvc_repro,
+    stop_dvc_process,
+)
 
 app = FastAPI(title="DVC Viewer", version="0.1.0")
 
@@ -585,29 +599,27 @@ async def freeze_stage(request: Request):
 @app.post("/api/run")
 async def run_pipeline(request: Request):
     """Run a single stage or the entire pipeline via `dvc repro`."""
-    import subprocess
-
     body = await request.json()
     stage = body.get("stage")  # None = run all
     force = body.get("force", False)
 
-    cmd = [_dvc_bin or "dvc", "repro"]
-    if stage:
-        cmd.append(stage)
-    if force:
-        cmd.append("--force")
-
-    try:
-        result = subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
-            cwd=str(_project_dir),
-            timeout=600,
-        )
-
-        logs = (result.stdout or "") + (result.stderr or "")
-        success = result.returncode == 0
+    success, returncode, logs = run_dvc_repro(_project_dir, _dvc_bin, stage, force)
+    
+    if returncode == 127: # FileNotFoundError
+        return JSONResponse(content={
+            "success": False,
+            "logs": "Error: DVC is not installed or not found in PATH.",
+            "failed_stage": None,
+            "stage": stage,
+        }, status_code=500)
+    
+    if returncode == -1: # Timeout
+        return JSONResponse(content={
+            "success": False,
+            "logs": "Error: Pipeline execution timed out (10 minute limit).",
+            "failed_stage": stage,
+            "stage": stage,
+        }, status_code=500)
 
         # Try to extract the failed stage from DVC error output
         failed_stage = None
@@ -630,20 +642,6 @@ async def run_pipeline(request: Request):
             "failed_stage": failed_stage,
             "stage": stage,
         })
-    except FileNotFoundError:
-        return JSONResponse(content={
-            "success": False,
-            "logs": "Error: DVC is not installed or not found in PATH.",
-            "failed_stage": None,
-            "stage": stage,
-        }, status_code=500)
-    except subprocess.TimeoutExpired:
-        return JSONResponse(content={
-            "success": False,
-            "logs": "Error: Pipeline execution timed out (10 minute limit).",
-            "failed_stage": stage,
-            "stage": stage,
-        }, status_code=500)
 
 
 @app.get("/api/run-stream")
@@ -679,16 +677,7 @@ async def run_pipeline_stream(
 
         global _running_proc
         try:
-            print(f"🚀 Running pipeline command: {' '.join(cmd)}")
-            proc = subprocess.Popen(
-                cmd,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                text=True,
-                cwd=str(_project_dir),
-                bufsize=1,  # line-buffered
-                start_new_session=True,  # own process group for killpg
-            )
+            proc = start_dvc_repro(_project_dir, _dvc_bin, stage, force)
             _running_proc = proc
         except FileNotFoundError:
             yield sse_event("done", {
@@ -790,41 +779,7 @@ async def stop_pipeline():
     (by reading the PID from .dvc/tmp/rwlock).
     """
     global _running_proc
-    import signal
-
-    # 1. Try UI-launched process first
-    proc = _running_proc
-    if proc is not None and proc.poll() is None:
-        try:
-            os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
-        except (ProcessLookupError, OSError):
-            try:
-                proc.terminate()
-            except (ProcessLookupError, OSError):
-                pass
-        return {"stopped": True, "source": "ui"}
-
-    # 2. Try external process via rwlock
-    from .parser import _safe_read_rwlock
-    rwlock_path = Path(_project_dir) / ".dvc" / "tmp" / "rwlock"
-    lock_data = _safe_read_rwlock(rwlock_path)
-
-    if lock_data:
-        try:
-            for _path, info in lock_data.get("write", {}).items():
-                if isinstance(info, dict) and "pid" in info:
-                    pid = info["pid"]
-                    try:
-                        os.kill(pid, 0)  # Check alive
-                        os.killpg(os.getpgid(pid), signal.SIGTERM)
-                        return {"stopped": True, "source": "external", "pid": pid}
-                    except (ProcessLookupError, PermissionError, OSError):
-                        pass
-                    break
-        except Exception:
-            pass
-
-    return {"stopped": False, "reason": "No pipeline running"}
+    return stop_dvc_process(_project_dir, _running_proc)
 
 
 @app.get("/api/file/history")

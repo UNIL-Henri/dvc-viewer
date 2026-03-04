@@ -20,7 +20,7 @@
 - **Symbol-Level Invalidation** — 🎯 If a script imports `foo` from `utils.py`, changing `bar` in `utils.py` will NOT invalidate the stage.
 - **Click-to-inspect** — Click any node to view its command, dependencies, and outputs
 - **Dark theme** — Sleek glassmorphism UI with smooth animations
-- **Concurrent Robustness** — 🛡️ Zero-contention design prevents `rwlock` corruption by monitoring DVC state without triggering internal DVC write-locks during active runs.
+- **Concurrent Robustness** — 🛡️ Zero-contention design prevents `rwlock` corruption by monitoring DVC state via the dedicated `dvc_client` module, which performs passive monitoring without triggering internal DVC write-locks.
 - **Zero config** — Just run `dvc-viewer` inside any DVC project
 
 ## 🚀 Quick Install
@@ -97,9 +97,33 @@ EOF
 | [Index Tasks](docs/index_tasks.md) | Tâches planifiées et en cours |
 | [Index Hashing](docs/index_hashing.md) | Mécanismes de hash, d'invalidation et portabilité |
 
+## 📂 Plan du repo
+
+```text
+dvc-viewer/
+├── dvc_viewer/
+│   ├── dvc_client.py   # Interactions DVC (subprocess, rwlock, pgrep)
+│   ├── git_client.py   # Interactions Git (log, show)
+│   ├── parser.py       # Pure YAML/JSON parser & DAG builder
+│   ├── server.py       # FastAPI server & API endpoints
+│   ├── updater.py      # dvc.yaml enhancement (hasher injection)
+│   ├── hasher.py       # AST-based code analysis
+│   └── cli.py          # Entry point
+├── tests/              # Test suite (46 tests)
+└── docs/               # Documentation
+```
+
+## 📜 Scripts d'entrée principaux
+
+| Commande | Description |
+|----------|-------------|
+| `dvc-viewer` | Lance le serveur web et l'auto-updater |
+| `dvc-viewer hash` | Calcule les hashes et met à jour `dvc.yaml` |
+
 ## 🛣️ Roadmap
 
-- [x] [Correction coloration graphe et ordre sidebar (Running vs Needs Rerun)](docs/tasks/fix_dvc_graph.md)
+- [x] [Isolation des interactions DVC (dvc_client.py)](docs/tasks/fix-rwlock-corruption.md)
+- [x] [Correction coloration graphe et ordre sidebar](docs/tasks/fix_dvc_graph.md)
 - [ ] Support pour les pipelines multi-projets
 
 ## 📄 License
