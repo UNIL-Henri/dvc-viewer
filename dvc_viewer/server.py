@@ -635,18 +635,43 @@ async def run_pipeline(request: Request):
             if match:
                 failed_stage = match.group(1)
 
-    # Trigger Auto-Push and GC if successful
-    if success and os.environ.get("DVC_GDRIVE_CREDENTIALS_DATA") and os.environ.get("DVC_GDRIVE_FOLDER_ID"):
-        def auto_push_sync():
+    # Trigger Auto-Commit and Auto-Push/GC if successful
+    if success:
+        def background_sync():
             try:
-                print("☁️ Auto-Pushing to Google Drive...")
-                subprocess.run([_dvc_bin, "push"], cwd=str(_project_dir), capture_output=True)
-                print("☁️ Auto-Cleaning (GC) on Google Drive...")
-                subprocess.run([_dvc_bin, "gc", "--cloud", "--workspace", "-f"], cwd=str(_project_dir), capture_output=True)
+                # 1. Auto Git Commit
+                if os.environ.get("DVC_VIEWER_GIT_AUTO_COMMIT") in ("1", "true", "True", "yes"):
+                    has_git = Path(_project_dir, ".git").exists()
+                    if has_git:
+                        print("📝 Auto-committing DVC changes to Git...")
+
+                        log_lines = logs.splitlines()[-100:]
+                        last_logs = "\n".join(log_lines)
+
+                        stage_name = stage or "All Stages"
+
+                        msg = f"{stage_name}\n\nExecution logs (last 100 lines):\n{last_logs}"
+                        subprocess.run(["git", "add", "dvc.lock", "dvc.yaml"], cwd=str(_project_dir), capture_output=True)
+                        # Only commit if there are changes
+                        subprocess.run(["git", "commit", "-m", msg], cwd=str(_project_dir), capture_output=True)
+
+                        # Optional auto git push
+                        rebase_res = subprocess.run(["git", "pull", "--rebase"], cwd=str(_project_dir), capture_output=True)
+                        if rebase_res.returncode != 0:
+                            subprocess.run(["git", "rebase", "--abort"], cwd=str(_project_dir), capture_output=True)
+                        else:
+                            subprocess.run(["git", "push"], cwd=str(_project_dir), capture_output=True)
+
+                # 2. Auto Push & GC
+                if os.environ.get("DVC_GDRIVE_CREDENTIALS_DATA") and os.environ.get("DVC_GDRIVE_FOLDER_ID"):
+                    print("☁️ Auto-Pushing to Google Drive...")
+                    subprocess.run([_dvc_bin, "push"], cwd=str(_project_dir), capture_output=True)
+                    print("☁️ Auto-Cleaning (GC) on Google Drive...")
+                    subprocess.run([_dvc_bin, "gc", "--cloud", "--date", "10 days ago", "-f"], cwd=str(_project_dir), capture_output=True)
             except Exception as e:
-                print(f"⚠️ Auto-Push/GC failed: {e}")
+                print(f"⚠️ Background sync task failed: {e}")
         import threading
-        threading.Thread(target=auto_push_sync, daemon=True).start()
+        threading.Thread(target=background_sync, daemon=True).start()
 
     return JSONResponse(content={
         "success": success,
@@ -691,9 +716,38 @@ async def run_pipeline_stream(
         current_stage = None
         success = True
         failed_stages = []
+        stage_logs = []
+
+        # We process git commits strictly sequentially in the event loop instead of threads to avoid index.lock issues
+        def _commit_stage_logs(stg_name, stage_lines):
+            try:
+                has_git = Path(_project_dir, ".git").exists()
+                if has_git:
+                    print(f"📝 Auto-committing DVC changes to Git for {stg_name}...")
+                    last_logs = "\n".join(stage_lines[-100:])
+                    msg = f"{stg_name}\n\nExecution logs (last 100 lines):\n{last_logs}"
+                    subprocess.run(["git", "add", "dvc.lock", "dvc.yaml"], cwd=str(_project_dir), capture_output=True)
+                    res = subprocess.run(["git", "commit", "-m", msg], cwd=str(_project_dir), capture_output=True)
+
+                    if res.returncode == 0:
+                        # Auto-push DVC first so we never push a git commit referencing missing remote data
+                        if os.environ.get("DVC_GDRIVE_CREDENTIALS_DATA") and os.environ.get("DVC_GDRIVE_FOLDER_ID"):
+                            print(f"☁️ Auto-Pushing {stg_name} to Google Drive...")
+                            subprocess.run([_dvc_bin, "push", stg_name], cwd=str(_project_dir), capture_output=True)
+
+                        # Now push Git
+                        rebase_res = subprocess.run(["git", "pull", "--rebase"], cwd=str(_project_dir), capture_output=True)
+                        if rebase_res.returncode != 0:
+                            subprocess.run(["git", "rebase", "--abort"], cwd=str(_project_dir), capture_output=True)
+                        else:
+                            subprocess.run(["git", "push"], cwd=str(_project_dir), capture_output=True)
+            except Exception as e:
+                print(f"⚠️ Git commit failed: {e}")
 
         global _running_proc
         try:
+            from .dvc_client import _auto_pull
+            _auto_pull(_project_dir, _dvc_bin)
             proc = start_dvc_repro(_project_dir, _dvc_bin, stage, force, keep_going)
             _running_proc = proc
         except FileNotFoundError:
@@ -721,10 +775,14 @@ async def run_pipeline_stream(
                 # Previous stage finished successfully
                 if current_stage and current_stage != new_stage:
                     mark_stage_complete(current_stage)
+                    if os.environ.get("DVC_VIEWER_GIT_AUTO_COMMIT") in ("1", "true", "True", "yes"):
+                        _commit_stage_logs(current_stage, list(stage_logs))
+
                     yield sse_event("stage_done", {
                         "stage": current_stage, "success": True,
                     })
                 current_stage = new_stage
+                stage_logs.clear()
                 mark_stage_started(new_stage)
                 yield sse_event("stage_start", {"stage": new_stage})
 
@@ -733,11 +791,15 @@ async def run_pipeline_stream(
                 # Close previous stage if needed
                 if current_stage and current_stage != skipped:
                     mark_stage_complete(current_stage)
+                    if os.environ.get("DVC_VIEWER_GIT_AUTO_COMMIT") in ("1", "true", "True", "yes"):
+                        _commit_stage_logs(current_stage, list(stage_logs))
+
                     yield sse_event("stage_done", {
                         "stage": current_stage, "success": True,
                     })
                 mark_stage_complete(skipped)
                 current_stage = None
+                stage_logs.clear()
                 yield sse_event("stage_skip", {"stage": skipped})
 
             # Check for failures
@@ -751,6 +813,7 @@ async def run_pipeline_stream(
 
             # Send log line
             print(f"[{current_stage or 'dvc'}] {line}")
+            stage_logs.append(line)
             yield sse_event("log", {
                 "stage": current_stage,
                 "line": line,
@@ -764,6 +827,9 @@ async def run_pipeline_stream(
             stage_ok = proc.returncode == 0 and (current_stage not in failed_stages)
             if stage_ok:
                 mark_stage_complete(current_stage)
+                if os.environ.get("DVC_VIEWER_GIT_AUTO_COMMIT") in ("1", "true", "True", "yes"):
+                    _commit_stage_logs(current_stage, list(stage_logs))
+
             yield sse_event("stage_done", {
                 "stage": current_stage,
                 "success": stage_ok,
@@ -780,18 +846,20 @@ async def run_pipeline_stream(
             "cancelled": cancelled,
         })
 
-        # Trigger push/GC AFTER the run if it was somewhat successful
-        if success and os.environ.get("DVC_GDRIVE_CREDENTIALS_DATA") and os.environ.get("DVC_GDRIVE_FOLDER_ID"):
-            def auto_push_sync():
+        # Trigger GC AFTER the full run if it was somewhat successful
+        if success:
+            def background_push():
                 try:
-                    print("☁️ Auto-Pushing to Google Drive...")
-                    subprocess.run([_dvc_bin, "push"], cwd=str(_project_dir), capture_output=True)
-                    print("☁️ Auto-Cleaning (GC) on Google Drive...")
-                    subprocess.run([_dvc_bin, "gc", "--cloud", "--workspace", "-f"], cwd=str(_project_dir), capture_output=True)
+                    # Auto Push & GC
+                    if os.environ.get("DVC_GDRIVE_CREDENTIALS_DATA") and os.environ.get("DVC_GDRIVE_FOLDER_ID"):
+                        print("☁️ Final Auto-Pushing to Google Drive...")
+                        subprocess.run([_dvc_bin, "push"], cwd=str(_project_dir), capture_output=True)
+                        print("☁️ Auto-Cleaning (GC) on Google Drive...")
+                        subprocess.run([_dvc_bin, "gc", "--cloud", "--workspace", "--all-commits", "--date", "10 days ago", "-f"], cwd=str(_project_dir), capture_output=True)
                 except Exception as e:
-                    print(f"⚠️ Auto-Push/GC failed: {e}")
+                    print(f"⚠️ Background sync task failed: {e}")
             import threading
-            threading.Thread(target=auto_push_sync, daemon=True).start()
+            threading.Thread(target=background_push, daemon=True).start()
 
     return StreamingResponse(
         generate(),

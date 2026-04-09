@@ -24,27 +24,27 @@ def _setup_gdrive_sync(project_dir: Path) -> None:
         return
 
     print("☁️  Configuring Google Drive Auto-Sync...")
-    # Use a temp file for credentials to avoid committing it
-    import tempfile
 
     try:
         # Check if JSON is valid
         json.loads(creds_data)
 
-        # Create a temp directory for the credentials file
-        temp_dir = Path(tempfile.mkdtemp(prefix="dvc-viewer-"))
-        creds_file = temp_dir / "gdrive_credentials.json"
+        # We need the credentials file to be persistent across git commands and DVC runs.
+        # We will write it inside the .dvc-viewer config dir, but add it to .gitignore
+        viewer_dir = project_dir / ".dvc-viewer"
+        viewer_dir.mkdir(parents=True, exist_ok=True)
+        creds_file = viewer_dir / "gdrive_credentials.json"
         creds_file.write_text(creds_data, encoding="utf-8")
 
-        # Register an exit handler to cleanup the temp directory if possible
-        import atexit
-        def cleanup_creds():
-            try:
-                import shutil
-                shutil.rmtree(temp_dir, ignore_errors=True)
-            except Exception:
-                pass
-        atexit.register(cleanup_creds)
+        # Ensure .dvc-viewer is in .gitignore to prevent accidental commits
+        gitignore = project_dir / ".gitignore"
+        ignore_line = ".dvc-viewer/\n"
+        if gitignore.exists():
+            content = gitignore.read_text(encoding="utf-8")
+            if ".dvc-viewer" not in content:
+                gitignore.write_text(content + "\n" + ignore_line, encoding="utf-8")
+        else:
+            gitignore.write_text(ignore_line, encoding="utf-8")
 
     except json.JSONDecodeError:
         print("❌ Invalid JSON in DVC_GDRIVE_CREDENTIALS_DATA")
