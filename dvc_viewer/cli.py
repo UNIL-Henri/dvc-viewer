@@ -20,8 +20,22 @@ def _setup_gdrive_sync(project_dir: Path) -> None:
     creds_data = os.environ.get("DVC_GDRIVE_CREDENTIALS_DATA")
     folder_id = os.environ.get("DVC_GDRIVE_FOLDER_ID")
 
-    if not creds_data or not folder_id:
+    if not creds_data:
         return
+
+    if not folder_id:
+        print("🔍 Searching for Google Drive DVC workspace...")
+        try:
+            from .gdrive import discover_dvc_folder
+            folder_id = discover_dvc_folder(creds_data)
+            if folder_id:
+                os.environ["DVC_GDRIVE_FOLDER_ID"] = folder_id
+            else:
+                print("❌ Could not determine Google Drive Folder ID. Auto-Sync disabled.")
+                return
+        except ImportError:
+            print("⚠️ Google API client libraries not installed. Please install them to use Drive auto-discovery.")
+            return
 
     print("☁️  Configuring Google Drive Auto-Sync...")
 
