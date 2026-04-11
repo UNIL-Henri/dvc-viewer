@@ -667,7 +667,7 @@ async def run_pipeline(request: Request):
                     print("☁️ Auto-Pushing to Google Drive...")
                     subprocess.run([_dvc_bin, "push"], cwd=str(_project_dir), capture_output=True)
                     print("☁️ Auto-Cleaning (GC) on Google Drive...")
-                    subprocess.run([_dvc_bin, "gc", "--cloud", "--date", "10 days ago", "-f"], cwd=str(_project_dir), capture_output=True)
+                    subprocess.run([_dvc_bin, "gc", "--cloud", "--workspace", "--all-commits", "--date", "10 days ago", "-f"], cwd=str(_project_dir), capture_output=True)
             except Exception as e:
                 print(f"⚠️ Background sync task failed: {e}")
         import threading
@@ -704,7 +704,7 @@ async def run_pipeline_stream(
     # We will trigger push and gc ONLY ONCE at the very end of the pipeline run.
     # Triggering per stage causes DVC lock contention and saturates the network/Drive API.
 
-    def generate():
+    async def generate():
         current_stage = None
         success = True
         failed_stages = []
@@ -790,61 +790,41 @@ async def run_pipeline_stream(
                     while "\n" in buffer:
                         line, buffer = buffer.split("\n", 1)
 
-            if m_run:
-                new_stage = m_run.group(1)
-                # Previous stage finished successfully
-                if current_stage and current_stage != new_stage:
-                    mark_stage_complete(current_stage)
-                    if os.environ.get("DVC_VIEWER_GIT_AUTO_COMMIT", "true").lower() not in ("0", "false", "no"):
-                        _commit_stage_logs(current_stage, list(stage_logs))
-
-                    yield sse_event("stage_done", {
-                        "stage": current_stage, "success": True,
-                    })
-                current_stage = new_stage
-                stage_logs.clear()
-                mark_stage_started(new_stage)
-                yield sse_event("stage_start", {"stage": new_stage})
-
-            elif m_skip:
-                skipped = m_skip.group(1)
-                # Close previous stage if needed
-                if current_stage and current_stage != skipped:
-                    mark_stage_complete(current_stage)
-                    if os.environ.get("DVC_VIEWER_GIT_AUTO_COMMIT", "true").lower() not in ("0", "false", "no"):
-                        _commit_stage_logs(current_stage, list(stage_logs))
-
-                    yield sse_event("stage_done", {
-                        "stage": current_stage, "success": True,
-                    })
-                mark_stage_complete(skipped)
-                current_stage = None
-                stage_logs.clear()
-                yield sse_event("stage_skip", {"stage": skipped})
-
                         # Detect stage transitions
                         m_run = re_running.search(line)
                         m_skip = re_skipped.search(line)
+                        if m_run:
+                            new_stage = m_run.group(1)
+                            # Previous stage finished successfully
+                            if current_stage and current_stage != new_stage:
+                                mark_stage_complete(current_stage)
+                                if os.environ.get("DVC_VIEWER_GIT_AUTO_COMMIT", "true").lower() not in ("0", "false", "no"):
+                                    _commit_stage_logs(current_stage, list(stage_logs))
 
-                        # Send log line
-                        print(f"[{current_stage or 'dvc'}] {line}")
-                        stage_logs.append(line)
-                        yield sse_event("log", {
-                            "stage": current_stage,
-                            "line": line,
-                        })
+                                yield sse_event("stage_done", {
+                                    "stage": current_stage, "success": True,
+                                })
+                            current_stage = new_stage
+                            stage_logs.clear()
+                            mark_stage_started(new_stage)
+                            yield sse_event("stage_start", {"stage": new_stage})
 
                         elif m_skip:
                             skipped = m_skip.group(1)
                             # Close previous stage if needed
                             if current_stage and current_stage != skipped:
                                 mark_stage_complete(current_stage)
+                                if os.environ.get("DVC_VIEWER_GIT_AUTO_COMMIT", "true").lower() not in ("0", "false", "no"):
+                                    _commit_stage_logs(current_stage, list(stage_logs))
+
                                 yield sse_event("stage_done", {
                                     "stage": current_stage, "success": True,
                                 })
                             mark_stage_complete(skipped)
                             current_stage = None
+                            stage_logs.clear()
                             yield sse_event("stage_skip", {"stage": skipped})
+
 
                         # Check for failures
                         m_fail = re_failed.search(line) or re_failed2.search(line)
@@ -856,11 +836,12 @@ async def run_pipeline_stream(
                             success = False
 
                         # Send log line
+                        print(f"[{current_stage or 'dvc'}] {line}")
+                        stage_logs.append(line)
                         yield sse_event("log", {
                             "stage": current_stage,
                             "line": line,
                         })
-
         except Exception as e:
             print(f"Error reading log file: {e}")
 
