@@ -2,7 +2,6 @@ import os
 import sys
 import json
 import subprocess
-import ast
 from pathlib import Path
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
@@ -34,11 +33,12 @@ def setup_and_push():
         sys.exit(1)
 
 def _parse_json_str(s: str) -> dict:
-    """Robust JSON parser that falls back to ast.literal_eval for python dict strings."""
+    """Robust JSON parser that falls back to yaml.safe_load for python dict strings and malformed JSON."""
     try:
         return json.loads(s)
     except json.JSONDecodeError:
-        return ast.literal_eval(s)
+        import yaml
+        return yaml.safe_load(s)
 
 def verify_gdrive():
     creds_str = os.environ.get("DVC_GDRIVE_CREDENTIALS")

@@ -14,14 +14,14 @@ from pathlib import Path
 
 import json
 import subprocess
-import ast
 
 def _parse_json_str(s: str) -> dict:
-    """Robust JSON parser that falls back to ast.literal_eval for python dict strings."""
+    """Robust JSON parser that falls back to yaml.safe_load for python dict strings and malformed JSON."""
     try:
         return json.loads(s)
     except json.JSONDecodeError:
-        return ast.literal_eval(s)
+        import yaml
+        return yaml.safe_load(s)
 
 def _setup_gdrive_sync(project_dir: Path) -> None:
     """Configure DVC remote if GDrive environment variables are present."""
