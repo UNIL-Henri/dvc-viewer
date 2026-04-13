@@ -67,7 +67,7 @@ def setup_gdrive_workspace(project_dir: Path, creds_str: str, token_str: str) ->
         repo_folder_name = project_dir.name
 
         # 1. Find or create root folder
-        query_root = f"name='{root_folder_name}' and mimeType='application/vnd.google-apps.folder' and trashed=false"
+        query_root = f"name='{root_folder_name}' and 'root' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false"
         results_root = service.files().list(q=query_root, spaces='drive', fields='files(id, name)').execute()
         files_root = results_root.get('files', [])
 
@@ -79,6 +79,7 @@ def setup_gdrive_workspace(project_dir: Path, creds_str: str, token_str: str) ->
             print(f"📁 Creating root Google Drive folder '{root_folder_name}'...")
             file_metadata = {
                 'name': root_folder_name,
+                'parents': ['root'],
                 'mimeType': 'application/vnd.google-apps.folder'
             }
             folder = service.files().create(body=file_metadata, fields='id').execute()
