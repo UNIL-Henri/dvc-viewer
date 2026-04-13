@@ -1,0 +1,3 @@
+stages:
+  dummy_ci_pass:
+    cmd: exit 0

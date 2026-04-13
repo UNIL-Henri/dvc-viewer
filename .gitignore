@@ -34,3 +34,6 @@ Thumbs.db
 .cursor/screenshots
 
 
+test_venv
+gdrive_venv
+/.pytest_cache

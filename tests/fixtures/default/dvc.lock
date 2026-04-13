@@ -1,0 +1,144 @@
+schema: '2.0'
+stages:
+  prepare:
+    cmd: echo "raw data" > data.txt
+    outs:
+    - path: data.txt
+      hash: md5
+      md5: 8a9d9e624359c683c8d4e08139b7eac0
+      size: 9
+  process:
+    cmd: cat data.txt > processed.txt
+    deps:
+    - path: data.txt
+      hash: md5
+      md5: 8a9d9e624359c683c8d4e08139b7eac0
+      size: 9
+    outs:
+    - path: processed.txt
+      hash: md5
+      md5: 8a9d9e624359c683c8d4e08139b7eac0
+      size: 9
+  featurize@v1:
+    cmd: echo "Feature v1" > "features_v1.txt"
+    deps:
+    - path: processed.txt
+      hash: md5
+      md5: 8a9d9e624359c683c8d4e08139b7eac0
+      size: 9
+    outs:
+    - path: features_v1.txt
+      hash: md5
+      md5: 1166d7f58c3e068f4fcb94d308393480
+      size: 11
+  featurize@v2:
+    cmd: echo "Feature v2" > "features_v2.txt"
+    deps:
+    - path: processed.txt
+      hash: md5
+      md5: 8a9d9e624359c683c8d4e08139b7eac0
+      size: 9
+    outs:
+    - path: features_v2.txt
+      hash: md5
+      md5: a6bfb9901b3c89d69695720ef247cbc2
+      size: 11
+  featurize@v3:
+    cmd: echo "Feature v3" > "features_v3.txt"
+    deps:
+    - path: processed.txt
+      hash: md5
+      md5: 8a9d9e624359c683c8d4e08139b7eac0
+      size: 9
+    outs:
+    - path: features_v3.txt
+      hash: md5
+      md5: 010438f125101a915f192a4572893c69
+      size: 11
+  train@small:
+    cmd: python3 train.py --epochs 10 --name small
+    deps:
+    - path: features_v1.txt
+      hash: md5
+      md5: 1166d7f58c3e068f4fcb94d308393480
+      size: 11
+    params:
+      config/params.yaml:
+        batch_size: 32
+        lr: 0.001
+    outs:
+    - path: model_small.pkl
+      hash: md5
+      md5: a42801e84cca7670304a966b680a1c97
+      size: 11
+  train@large:
+    cmd: python3 train.py --epochs 100 --name large
+    deps:
+    - path: features_v1.txt
+      hash: md5
+      md5: 1166d7f58c3e068f4fcb94d308393480
+      size: 11
+    params:
+      config/params.yaml:
+        batch_size: 32
+        lr: 0.001
+    outs:
+    - path: model_large.pkl
+      hash: md5
+      md5: 96e49d33632b712ac1847f99c85879df
+      size: 11
+  evaluate@small:
+    cmd: python3 evaluate.py --model "model_small.pkl"
+    deps:
+    - path: model_small.pkl
+      hash: md5
+      md5: a42801e84cca7670304a966b680a1c97
+      size: 11
+    outs:
+    - path: confusion_small.csv
+      hash: md5
+      md5: 38f09140273d2dfa9dd3de7ee7f46b83
+      size: 417
+    - path: metrics_small.json
+      hash: md5
+      md5: 98e84c18b96d12b7188dadb8b09a20b1
+      size: 60
+  evaluate@large:
+    cmd: python3 evaluate.py --model "model_large.pkl"
+    deps:
+    - path: model_large.pkl
+      hash: md5
+      md5: 96e49d33632b712ac1847f99c85879df
+      size: 11
+    outs:
+    - path: confusion_large.csv
+      hash: md5
+      md5: c57405eef2432b4a97b20a80c235ae39
+      size: 417
+    - path: metrics_large.json
+      hash: md5
+      md5: 690a400529c42ebfba61ca4b62e31a35
+      size: 65
+  aggregate:
+    cmd: cat metrics_small.json metrics_large.json > final_report.txt
+    deps:
+    - path: metrics_large.json
+      hash: md5
+      md5: 690a400529c42ebfba61ca4b62e31a35
+      size: 65
+    - path: metrics_small.json
+      hash: md5
+      md5: 98e84c18b96d12b7188dadb8b09a20b1
+      size: 60
+    outs:
+    - path: final_report.txt
+      hash: md5
+      md5: 6a34e50fd23678506f93ae582702b9b5
+      size: 125
+  monitor:
+    cmd: date > heartbeat.log
+    outs:
+    - path: heartbeat.log
+      hash: md5
+      md5: f8fbe289e4f29031c33e5f873819cab2
+      size: 29

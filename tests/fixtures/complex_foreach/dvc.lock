@@ -1,0 +1,97 @@
+schema: '2.0'
+stages:
+  prepare:
+    cmd: echo "base data" > data.txt
+    outs:
+    - path: data.txt
+      hash: md5
+      md5: 5d9f0222c94464a14b0f5d413879c0d0
+      size: 10
+  process@v1:
+    cmd: echo "Processing v1" > "data_v1.txt"
+    deps:
+    - path: data.txt
+      hash: md5
+      md5: 5d9f0222c94464a14b0f5d413879c0d0
+      size: 10
+    outs:
+    - path: data_v1.txt
+      hash: md5
+      md5: 5efc938f152814ca3fae3db07baa3fb0
+      size: 14
+  process@v2:
+    cmd: echo "Processing v2" > "data_v2.txt"
+    deps:
+    - path: data.txt
+      hash: md5
+      md5: 5d9f0222c94464a14b0f5d413879c0d0
+      size: 10
+    outs:
+    - path: data_v2.txt
+      hash: md5
+      md5: 137e9825280737d0192c915491cc5228
+      size: 14
+  train@short:
+    cmd: python3 train.py --epochs 10 --name short
+    deps:
+    - path: data.txt
+      hash: md5
+      md5: 5d9f0222c94464a14b0f5d413879c0d0
+      size: 10
+    outs:
+    - path: model_short.pkl
+      hash: md5
+      md5: 0428cab9a35f1e52e798b22f80d6fc17
+      size: 11
+  train@long:
+    cmd: python3 train.py --epochs 100 --name long
+    deps:
+    - path: data.txt
+      hash: md5
+      md5: 5d9f0222c94464a14b0f5d413879c0d0
+      size: 10
+    outs:
+    - path: model_long.pkl
+      hash: md5
+      md5: cf39197a447fa98cd599700293377d91
+      size: 10
+  compare@short:
+    cmd: cat "model_short.pkl" > "eval_short.txt"
+    deps:
+    - path: model_short.pkl
+      hash: md5
+      md5: 0428cab9a35f1e52e798b22f80d6fc17
+      size: 11
+    outs:
+    - path: eval_short.txt
+      hash: md5
+      md5: 0428cab9a35f1e52e798b22f80d6fc17
+      size: 11
+  compare@long:
+    cmd: cat "model_long.pkl" > "eval_long.txt"
+    deps:
+    - path: model_long.pkl
+      hash: md5
+      md5: cf39197a447fa98cd599700293377d91
+      size: 10
+    outs:
+    - path: eval_long.txt
+      hash: md5
+      md5: cf39197a447fa98cd599700293377d91
+      size: 10
+  collect:
+    cmd: cat eval_short.txt eval_long.txt > final.txt
+    deps:
+    - path: eval_long.txt
+      hash: md5
+      md5: cf39197a447fa98cd599700293377d91
+      size: 10
+    - path: eval_short.txt
+      hash: md5
+      md5: 0428cab9a35f1e52e798b22f80d6fc17
+      size: 11
+    outs:
+    - path: final.txt
+      hash: md5
+      md5: 39a2fd29d555b212a223ae7667aa3dfa
+      size: 21
