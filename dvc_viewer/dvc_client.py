@@ -228,7 +228,7 @@ def detect_running_stage(
 
 def _auto_pull(project_dir: str | Path, dvc_bin: str) -> None:
     """Silently run dvc pull if auto-sync is configured."""
-    if os.environ.get("DVC_GDRIVE_CREDENTIALS_DATA") and os.environ.get("DVC_GDRIVE_FOLDER_ID"):
+    if os.environ.get("DVC_GDRIVE_TOKEN") and os.environ.get("DVC_GDRIVE_FOLDER_ID"):
         try:
             print("☁️ Auto-Pulling from Google Drive...")
             subprocess.run([dvc_bin, "pull"], cwd=str(project_dir), capture_output=True, timeout=600)

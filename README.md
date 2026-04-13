@@ -71,30 +71,29 @@ The web interface opens automatically at [http://localhost:8686](http://localhos
 
 DVC-Viewer can automatically pull, push, and clean up your remote DVC data on Google Drive without any manual configuration or browser interaction. This is especially useful for "headless" environments like virtual machines or cloud agents.
 
-To enable this, you need a **Google Cloud Service Account** with access to your Drive folder.
+To enable this, you need **Google Cloud OAuth 2.0 Credentials** (Desktop App) to avoid the 0-byte quota limits imposed on Service Accounts. DVC-Viewer will automatically organize your DVC data into a `DVC/<repository_name>/` folder structure on your Drive.
 
-### 1. Setup the Service Account
+### 1. Setup OAuth 2.0 Credentials
 1. Go to the [Google Cloud Console](https://console.cloud.google.com/) and select/create a project.
 2. Enable the **Google Drive API** for the project.
-3. Go to **IAM & Admin > Service Accounts** and create a new Service Account (no specific roles are needed).
-4. Go to the keys for that Service Account, and **Create a new JSON key**. Download this file.
-5. Note the email address of the Service Account (e.g., `my-bot@project.iam.gserviceaccount.com`).
+3. Go to **APIs & Services > Credentials**.
+4. Click **Create Credentials > OAuth client ID**.
+5. Select **Desktop app** as the application type and create it.
+6. **Download JSON** and save it to your machine (e.g., `credentials.json`).
 
-### 2. Share your Google Drive Folder
-1. Go to your Google Drive and create a folder for DVC data.
-2. Share this folder with the **Service Account email address** (granting "Editor" access).
-3. Copy the **Folder ID** from the URL (the part after `/folders/`).
+### 2. Generate Authentication Tokens
+DVC-Viewer provides a script to run the local browser auth flow and generate the required environment variables:
+```bash
+python3 scripts/setup_gdrive_auth.py
+```
+This will open your browser to authorize access and output the exact `export` commands you need.
 
 ### 3. Run DVC-Viewer
-Set the following environment variables when running `dvc-viewer`:
-
-- `DVC_GDRIVE_FOLDER_ID`: The ID of your Drive folder.
-- `DVC_GDRIVE_CREDENTIALS_DATA`: The *raw content* of the JSON key file you downloaded.
-- `DVC_VIEWER_GIT_AUTO_COMMIT`: (Optional) Set to `0` or `false` to disable automatic git commits (enabled by default).
+Set the environment variables outputted by the script when running `dvc-viewer`:
 
 ```bash
-export DVC_GDRIVE_FOLDER_ID="1A2b3C4d5E6f7G8h9I0j"
-export DVC_GDRIVE_CREDENTIALS_DATA='{ "type": "service_account", "project_id": "...", ... }'
+export DVC_GDRIVE_CREDENTIALS='{ ... }'
+export DVC_GDRIVE_TOKEN='{ ... }'
 export DVC_VIEWER_GIT_AUTO_COMMIT="false"
 
 dvc-viewer
