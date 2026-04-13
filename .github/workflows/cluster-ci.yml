@@ -23,3 +23,9 @@ jobs:
 
       - name: Run Orchestrator
         run: /usr/local/bin/cluster-ci-run "${{ github.repository }}" "${{ github.head_ref || github.ref_name }}" "${{ secrets.GITHUB_TOKEN }}"
+
+      - name: Verify Unit Tests
+        run: export PYTHONPATH=$(pwd) && uv run pytest tests/
+
+      - name: Verify Google Drive Sync
+        run: export PYTHONPATH=$(pwd) && uv run pytest tests/test_gdrive_ci.py
