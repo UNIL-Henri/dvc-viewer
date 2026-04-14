@@ -39,5 +39,11 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Cleanup corrupted DVC config
+        run: |
+          # Cleanup possible corrupted config from a previously failed run to prevent dvc crashing
+          rm -f /home/henri/cluster-ci/repositories/UNIL-Henri/dvc-viewer/.dvc/config
+          rm -f /home/henri/cluster-ci/repositories/UNIL-Henri/dvc-viewer/.dvc/config.local
+
       - name: Run Orchestrator
         run: /usr/local/bin/cluster-ci-run "${{ github.repository }}" "${{ github.head_ref || github.ref_name }}" "${{ secrets.GITHUB_TOKEN }}"
