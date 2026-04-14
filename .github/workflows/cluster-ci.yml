@@ -1,5 +1,23 @@
 name: Cluster-CI Execution
 
+# =========================================================================================
+# ⚠️ AI AGENT INSTRUCTIONS (JOULES / CURSOR) ⚠️
+# DO NOT MODIFY THIS FILE.
+#
+# This workflow is managed by the external Cluster-CI orchestrator. It executes
+# the pipeline in a fully configured environment where dependencies (uv) and
+# SECRETS (like DVC_GDRIVE_CREDENTIALS) are automatically injected by the runner.
+#
+# If you need to run tests or research scripts, DO NOT create a separate workflow
+# file running native shell commands (like 'pytest' or 'uv run ...'). Native steps
+# won't have access to the cluster's secure environment variables.
+#
+# INSTEAD:
+# 1. Create a DVC stage in 'dvc.yaml' (e.g., 'dvc stage add -n test pytest ...').
+# 2. Put the stage name(s) in the '.cluster-ci' file at the root of the repo.
+# 3. The orchestrator will automatically run 'dvc repro <stage>' with all secrets loaded.
+# =========================================================================================
+
 on:
   push:
     branches: [ main, master ]
@@ -20,18 +38,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      - name: Run Pytest
-        env:
-          DVC_GDRIVE_CREDENTIALS: ${{ secrets.DVC_GDRIVE_CREDENTIALS }}
-          DVC_GDRIVE_TOKEN: ${{ secrets.DVC_GDRIVE_TOKEN }}
-        run: |
-          # Setup isolated environment and run tests
-          uv venv
-          source .venv/bin/activate
-          uv pip install -e . pytest
-          export PYTHONPATH=$(pwd)
-          pytest tests/ -v
 
       - name: Run Orchestrator
         run: /usr/local/bin/cluster-ci-run "${{ github.repository }}" "${{ github.head_ref || github.ref_name }}" "${{ secrets.GITHUB_TOKEN }}"

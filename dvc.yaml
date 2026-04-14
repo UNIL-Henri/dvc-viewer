@@ -1,4 +1,8 @@
 stages:
+  tests:
+    cmd: pytest tests/ -v
+    always_changed: true
+
   generate_fake_output:
     cmd: echo "Fake research output generated at $(date)" > fake_output.txt
     always_changed: true
