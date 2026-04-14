@@ -1,6 +1,5 @@
 import os
 from pathlib import Path
-from dvc_viewer.gdrive import setup_gdrive_workspace
 
 def test_setup_gdrive_workspace_creates_folders(tmp_path: Path):
     """
@@ -8,6 +7,12 @@ def test_setup_gdrive_workspace_creates_folders(tmp_path: Path):
     with the real Google Drive API and creates/finds the root 'DVC' folder
     and the repository subfolder.
     """
+    try:
+        from dvc_viewer.gdrive import setup_gdrive_workspace
+    except ImportError:
+        import pytest
+        pytest.skip("Missing googleapiclient dependency")
+
     creds_str = os.environ.get("DVC_GDRIVE_CREDENTIALS")
     token_str = os.environ.get("DVC_GDRIVE_TOKEN")
 
