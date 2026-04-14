@@ -86,11 +86,15 @@ def _setup_gdrive_sync(project_dir: Path) -> None:
 
         # Ensure .dvc-viewer is in .gitignore to prevent accidental commits
         gitignore = project_dir / ".gitignore"
-        ignore_line = ".dvc-viewer/\n"
+        ignore_line = ".dvc-viewer/\n!.dvc-viewer/bootstrap.sh\n"
         if gitignore.exists():
             content = gitignore.read_text(encoding="utf-8")
-            if ".dvc-viewer" not in content:
-                gitignore.write_text(content + "\n" + ignore_line, encoding="utf-8")
+            if ".dvc-viewer/" not in content and ".dvc-viewer\n" not in content:
+                # Add if not present at all
+                gitignore.write_text(content.rstrip() + "\n" + ignore_line, encoding="utf-8")
+            elif "!.dvc-viewer/bootstrap.sh" not in content:
+                # Add the exception if .dvc-viewer is ignored but bootstrap.sh is not excepted
+                gitignore.write_text(content.rstrip() + "\n!.dvc-viewer/bootstrap.sh\n", encoding="utf-8")
         else:
             gitignore.write_text(ignore_line, encoding="utf-8")
 
