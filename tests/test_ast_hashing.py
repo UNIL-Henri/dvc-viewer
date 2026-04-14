@@ -1,5 +1,4 @@
 
-from pathlib import Path
 import pytest
 import ast
 from dvc_viewer.hasher import (

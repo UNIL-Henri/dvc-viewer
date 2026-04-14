@@ -2,10 +2,8 @@
 
 import os
 import textwrap
-from pathlib import Path
 from unittest.mock import patch
 
-import pytest
 
 from dvc_viewer.updater import _find_project_python, update_dvc_yaml
 

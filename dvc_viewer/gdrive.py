@@ -1,9 +1,9 @@
-import json
 import os
 from pathlib import Path
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 import logging
+from dvc_viewer.utils import _parse_json_str
 
 # Suppress googleapiclient warning about file_cache
 logging.getLogger("googleapiclient.discovery_cache").setLevel(logging.ERROR)
@@ -38,13 +38,7 @@ def convert_to_oauth2client(creds_data: dict, token_data: dict) -> dict:
         "_module": "oauth2client.client"
     }
 
-def _parse_json_str(s: str) -> dict:
-    """Robust JSON parser that falls back to yaml.safe_load for python dict strings and malformed JSON."""
-    try:
-        return json.loads(s)
-    except json.JSONDecodeError:
-        import yaml
-        return yaml.safe_load(s)
+
 
 def setup_gdrive_workspace(project_dir: Path, creds_str: str, token_str: str) -> str | None:
     """

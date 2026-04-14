@@ -1,6 +1,4 @@
 
-import os
-import shutil
 import textwrap
 from pathlib import Path
 from dvc_viewer.updater import update_dvc_yaml

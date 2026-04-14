@@ -1,11 +1,8 @@
 """Tests for DVC pipeline parser."""
 
 import textwrap
-from pathlib import Path
 
 from dvc_viewer.parser import parse_dvc_yaml, _load_params, _resolve_interpolation
-import json
-import os
 
 
 # ---------------------------------------------------------------------------

@@ -1,11 +1,11 @@
 import os
 import sys
-import json
 import subprocess
 from pathlib import Path
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 import logging
+from dvc_viewer.utils import _parse_json_str
 
 logging.getLogger("googleapiclient.discovery_cache").setLevel(logging.ERROR)
 
@@ -20,6 +20,14 @@ def setup_and_push():
         _setup_gdrive_sync(project_dir)
         dvc_bin = resolve_dvc_bin(project_dir)
 
+        # Verify the remote was actually created
+        remote_list = subprocess.run([dvc_bin, "remote", "list"], cwd=str(project_dir), capture_output=True, text=True)
+        if "gdrive_remote" not in remote_list.stdout:
+            print("❌ ERROR: The DVC remote 'gdrive_remote' was not created.")
+            print("   This means the DVC_GDRIVE_CREDENTIALS or DVC_GDRIVE_TOKEN secrets provided to the environment are invalid or incomplete.")
+            print("   Please configure real OAuth 2.0 credentials in the repository settings.")
+            sys.exit(1)
+
         print("☁️ Pushing 'fake_output.txt' to Google Drive...")
         result = subprocess.run([dvc_bin, "push", "fake_output.txt"], capture_output=True, text=True)
         if result.returncode != 0:
@@ -32,13 +40,7 @@ def setup_and_push():
         print(f"❌ Error during DVC remote setup or push: {e}")
         sys.exit(1)
 
-def _parse_json_str(s: str) -> dict:
-    """Robust JSON parser that falls back to yaml.safe_load for python dict strings and malformed JSON."""
-    try:
-        return json.loads(s)
-    except json.JSONDecodeError:
-        import yaml
-        return yaml.safe_load(s)
+
 
 def verify_gdrive():
     creds_str = os.environ.get("DVC_GDRIVE_CREDENTIALS")

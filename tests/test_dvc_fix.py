@@ -1,6 +1,4 @@
 import yaml
-import pytest
-from pathlib import Path
 from dvc_viewer.parser import (
     parse_dvc_lock,
     _check_stage_hashes_on_disk,

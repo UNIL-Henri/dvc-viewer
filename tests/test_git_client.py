@@ -1,6 +1,5 @@
 """Tests for git_client module."""
 
-import subprocess
 import pytest
 from dvc_viewer.git_client import git_show_file, get_commit_list
 
