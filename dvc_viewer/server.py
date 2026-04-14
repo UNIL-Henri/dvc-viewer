@@ -426,6 +426,21 @@ async def get_hydra_config(path: str = Query(..., description="Relative path to 
         return JSONResponse(content={"error": str(e)}, status_code=500)
 
 
+def _update_config_file(target: Path, source_params: dict) -> None:
+    """Read, update, and write a single Hydra config YAML file."""
+    if not target.exists() or not target.is_file():
+        return
+
+    content = target.read_text(encoding="utf-8")
+    data = yaml.safe_load(content) or {}
+    if not isinstance(data, dict):
+        return
+
+    _apply_params(data, source_params)
+    output = yaml.dump(data, sort_keys=False, default_flow_style=False, allow_unicode=True)
+    target.write_text(output, encoding="utf-8")
+
+
 def _apply_params(data: dict, params: dict) -> dict:
     """Apply dot-notation param updates to a nested dict (in place)."""
     for dotted_key, new_value in params.items():
@@ -494,21 +509,17 @@ async def put_hydra_config(request: Request):
                 edits_by_source.setdefault(path, {})[key] = val
 
         # Apply edits to each source file
+        tasks = []
         for source_path, source_params in edits_by_source.items():
             target = (project / source_path).resolve()
             # Security: ensure within project
             if not str(target).startswith(str(project)):
                 continue
-            if not target.exists() or not target.is_file():
-                continue
 
-            content = target.read_text(encoding="utf-8")
-            data = yaml.safe_load(content) or {}
-            if not isinstance(data, dict):
-                continue
-            _apply_params(data, source_params)
-            output = yaml.dump(data, sort_keys=False, default_flow_style=False, allow_unicode=True)
-            target.write_text(output, encoding="utf-8")
+            tasks.append(asyncio.to_thread(_update_config_file, target, source_params))
+
+        if tasks:
+            await asyncio.gather(*tasks)
 
         return JSONResponse(content={"success": True, "path": path})
     except Exception as e:
