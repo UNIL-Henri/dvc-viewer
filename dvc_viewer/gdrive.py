@@ -10,8 +10,8 @@ logging.getLogger("googleapiclient.discovery_cache").setLevel(logging.ERROR)
 
 def convert_to_oauth2client(creds_data: dict, token_data: dict) -> dict:
     """Convert modern google-auth token to legacy oauth2client format for pydrive2."""
-    client_id = creds_data.get("installed", {}).get("client_id") or creds_data.get("web", {}).get("client_id", "")
-    client_secret = creds_data.get("installed", {}).get("client_secret") or creds_data.get("web", {}).get("client_secret", "")
+    client_id = creds_data.get("installed", {}).get("client_id") or creds_data.get("web", {}).get("client_id") or creds_data.get("client_id", "")
+    client_secret = creds_data.get("installed", {}).get("client_secret") or creds_data.get("web", {}).get("client_secret") or creds_data.get("client_secret", "")
 
     return {
         "access_token": token_data.get("token"),
@@ -38,6 +38,14 @@ def convert_to_oauth2client(creds_data: dict, token_data: dict) -> dict:
         "_module": "oauth2client.client"
     }
 
+def _parse_json_str(s: str) -> dict:
+    """Robust JSON parser that falls back to yaml.safe_load for python dict strings and malformed JSON."""
+    try:
+        return json.loads(s)
+    except json.JSONDecodeError:
+        import yaml
+        return yaml.safe_load(s)
+
 def setup_gdrive_workspace(project_dir: Path, creds_str: str, token_str: str) -> str | None:
     """
     Sets up the GDrive workspace:
@@ -46,12 +54,12 @@ def setup_gdrive_workspace(project_dir: Path, creds_str: str, token_str: str) ->
     Returns the repository folder ID.
     """
     try:
-        creds_dict = json.loads(creds_str)
-        token_dict = json.loads(token_str)
+        creds_dict = _parse_json_str(creds_str)
+        token_dict = _parse_json_str(token_str)
 
-        client_id = creds_dict.get("installed", {}).get("client_id") or creds_dict.get("web", {}).get("client_id", "")
-        client_secret = creds_dict.get("installed", {}).get("client_secret") or creds_dict.get("web", {}).get("client_secret", "")
-        token_uri = creds_dict.get("installed", {}).get("token_uri") or creds_dict.get("web", {}).get("token_uri", "https://oauth2.googleapis.com/token")
+        client_id = creds_dict.get("installed", {}).get("client_id") or creds_dict.get("web", {}).get("client_id") or creds_dict.get("client_id", "")
+        client_secret = creds_dict.get("installed", {}).get("client_secret") or creds_dict.get("web", {}).get("client_secret") or creds_dict.get("client_secret", "")
+        token_uri = creds_dict.get("installed", {}).get("token_uri") or creds_dict.get("web", {}).get("token_uri") or creds_dict.get("token_uri", "https://oauth2.googleapis.com/token")
 
         creds = Credentials(
             token=token_dict.get("token"),

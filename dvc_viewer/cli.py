@@ -15,6 +15,14 @@ from pathlib import Path
 import json
 import subprocess
 
+def _parse_json_str(s: str) -> dict:
+    """Robust JSON parser that falls back to yaml.safe_load for python dict strings and malformed JSON."""
+    try:
+        return json.loads(s)
+    except json.JSONDecodeError:
+        import yaml
+        return yaml.safe_load(s)
+
 def _setup_gdrive_sync(project_dir: Path) -> None:
     """Configure DVC remote if GDrive environment variables are present."""
     creds_data = os.environ.get("DVC_GDRIVE_CREDENTIALS")
@@ -62,8 +70,8 @@ def _setup_gdrive_sync(project_dir: Path) -> None:
 
     try:
         # Parse JSONs
-        creds_dict = json.loads(creds_data)
-        token_dict = json.loads(token_data)
+        creds_dict = _parse_json_str(creds_data)
+        token_dict = _parse_json_str(token_data)
 
         # We need the credentials file to be persistent across git commands and DVC runs.
         # We will write it inside the .dvc-viewer config dir, but add it to .gitignore
@@ -86,7 +94,7 @@ def _setup_gdrive_sync(project_dir: Path) -> None:
         else:
             gitignore.write_text(ignore_line, encoding="utf-8")
 
-    except json.JSONDecodeError:
+    except (json.JSONDecodeError, ValueError, SyntaxError):
         print("❌ Invalid JSON in DVC_GDRIVE_CREDENTIALS or DVC_GDRIVE_TOKEN")
         return
 

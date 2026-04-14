@@ -46,11 +46,13 @@ def _strip_docstrings(tree: ast.AST) -> None:
     """Recursively remove docstrings from a module, class, or function."""
     if hasattr(tree, "body") and isinstance(tree.body, list):
         # Docstring is an Expr node containing a Constant string as the first element
-        if (tree.body and isinstance(tree.body[0], ast.Expr) and 
-            isinstance(tree.body[0].value, (ast.Str, ast.Constant))):
-            val = getattr(tree.body[0].value, "s", None) if isinstance(tree.body[0].value, ast.Str) else getattr(tree.body[0].value, "value", None)
-            if isinstance(val, str):
-                tree.body.pop(0)
+        _ast_str = getattr(ast, "Str", type(None))
+        if tree.body and isinstance(tree.body[0], ast.Expr):
+            val_node = tree.body[0].value
+            if isinstance(val_node, (_ast_str, ast.Constant)):
+                val = getattr(val_node, "s", None) if isinstance(val_node, _ast_str) else getattr(val_node, "value", None)
+                if isinstance(val, str):
+                    tree.body.pop(0)
         
         # Recurse into body elements
         for node in tree.body:
