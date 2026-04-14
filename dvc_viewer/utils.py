@@ -7,8 +7,23 @@ def _parse_json_str(s: str) -> dict:
         s = s[1:-1]
     elif s.startswith("'") and s.endswith("'"):
         s = s[1:-1]
+
+    s = s.strip()
+    # Unescape escaped quotes if bash stringified it
+    if r'\"' in s:
+        s = s.replace(r'\"', '"')
+
     try:
         return json.loads(s)
     except Exception:
         import yaml
-        return yaml.safe_load(s)
+        import re
+        # Try to fix {key:value} to {key: value} for yaml
+        s_yaml = re.sub(r'([{,])\s*([a-zA-Z0-9_]+):([^\s])', r'\1 \2: \3', s)
+        try:
+            res = yaml.safe_load(s_yaml)
+            if isinstance(res, dict):
+                return res
+            return {}
+        except Exception:
+            return {}
