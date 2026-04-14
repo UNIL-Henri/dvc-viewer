@@ -1,6 +1,6 @@
 stages:
   tests:
-    cmd: pytest tests/ -v
+    cmd: PYTHONPATH=. uv run pytest tests/ -v
     always_changed: true
 
   generate_fake_output:
