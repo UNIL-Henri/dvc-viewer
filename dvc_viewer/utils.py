@@ -23,7 +23,11 @@ def _parse_json_str(s: str) -> dict:
         prev = ""
         while s_yaml != prev:
             prev = s_yaml
-            s_yaml = re.sub(r'([{,\s])([a-zA-Z0-9_]+):([^\s])', r'\1\2: \3', s_yaml)
+            # We want to insert a space after the colon ONLY if it's followed by a word character
+            # or another bracket, but NOT if it's followed by a slash (like in http://)
+            s_yaml = re.sub(r'([{,\s][a-zA-Z0-9_]+):([^{}\s\[\]/])', r'\1: \2', s_yaml)
+            # Also handle {key:{ nested case
+            s_yaml = re.sub(r'([{,\s][a-zA-Z0-9_]+):({|\[)', r'\1: \2', s_yaml)
 
         try:
             res = yaml.safe_load(s_yaml)

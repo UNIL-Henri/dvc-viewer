@@ -97,6 +97,9 @@ def _setup_gdrive_sync(project_dir: Path) -> None:
     if not remote_exists and folder_id:
         subprocess.run([dvc_bin, "remote", "add", "-d", "-f", "gdrive_remote", f"gdrive://{folder_id}"],
                        cwd=str(project_dir), capture_output=True)
+    elif not remote_exists and not folder_id:
+        print("❌ Could not configure 'gdrive_remote': folder_id is missing.")
+        return
 
     # 2. Configure OAuth token locally
     subprocess.run([dvc_bin, "remote", "modify", "--local", "gdrive_remote", "gdrive_use_service_account", "false"],
