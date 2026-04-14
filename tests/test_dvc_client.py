@@ -1,9 +1,6 @@
 """Tests for dvc_client module."""
 
 import json
-import os
-import subprocess
-from pathlib import Path
 from dvc_viewer.dvc_client import (
     safe_read_rwlock,
     resolve_dvc_bin,

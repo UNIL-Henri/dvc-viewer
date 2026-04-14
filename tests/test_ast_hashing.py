@@ -1,5 +1,5 @@
 
-from pathlib import Path
+import sys
 import pytest
 import ast
 from dvc_viewer.hasher import (
@@ -29,6 +29,7 @@ def foo():
     assert len(func_node.body) == 1
     assert isinstance(func_node.body[0], ast.Return)
 
+@pytest.mark.skipif(sys.version_info < (3, 9), reason="ast.unparse requires Python 3.9+")
 def test_comment_change_no_invalidation(tmp_path):
     file1 = tmp_path / "script.py"
     file1.write_text("def foo():\n    return 42\n")
@@ -41,6 +42,7 @@ def test_comment_change_no_invalidation(tmp_path):
     
     assert hash1 == hash2
 
+@pytest.mark.skipif(sys.version_info < (3, 9), reason="ast.unparse requires Python 3.9+")
 def test_docstring_change_no_invalidation(tmp_path):
     file1 = tmp_path / "script.py"
     file1.write_text("def foo():\n    \"\"\"Old doc.\"\"\"\n    return 42\n")
@@ -53,6 +55,7 @@ def test_docstring_change_no_invalidation(tmp_path):
     
     assert hash1 == hash2
 
+@pytest.mark.skipif(sys.version_info < (3, 9), reason="ast.unparse requires Python 3.9+")
 def test_whitespace_change_no_invalidation(tmp_path):
     file1 = tmp_path / "script.py"
     file1.write_text("def foo():\n    return 42\n")
@@ -104,6 +107,7 @@ def test_type_annotation_change_invalidation(tmp_path):
 
 # --- Phase 2 Tests ---
 
+@pytest.mark.skipif(sys.version_info < (3, 9), reason="ast.unparse requires Python 3.9+")
 def test_symbol_level_unimported_change(tmp_path):
     # lib.py has foo() and bar()
     # train.py imports ONLY foo()
@@ -178,6 +182,7 @@ def test_import_star_fallback(tmp_path):
     hash2 = compute_aggregate_hash(deps, tmp_path, import_names=names, entry_point=train_path)
     
     assert hash1 != hash2
+@pytest.mark.skipif(sys.version_info < (3, 9), reason="ast.unparse requires Python 3.9+")
 def test_symbol_chain_3_levels(tmp_path):
     # C.py : helper()
     # B.py : from C import helper; def foo(): return helper(); def bar(): return 0
@@ -232,6 +237,7 @@ def test_non_python_string_refs_excluded(tmp_path):
     assert "config.yaml" not in dep_names, "config.yaml should not be a transitive dep"
 
 
+@pytest.mark.skipif(sys.version_info < (3, 9), reason="ast.unparse requires Python 3.9+")
 def test_hash_deterministic_golden(tmp_path):
     """
     Vérifie que le hash produit pour un code donné est strictement identique

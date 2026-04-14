@@ -14,14 +14,9 @@ from pathlib import Path
 
 import json
 import subprocess
+from .utils import _parse_json_str
 
-def _parse_json_str(s: str) -> dict:
-    """Robust JSON parser that falls back to yaml.safe_load for python dict strings and malformed JSON."""
-    try:
-        return json.loads(s)
-    except json.JSONDecodeError:
-        import yaml
-        return yaml.safe_load(s)
+
 
 def _setup_gdrive_sync(project_dir: Path) -> None:
     """Configure DVC remote if GDrive environment variables are present."""
@@ -48,10 +43,15 @@ def _setup_gdrive_sync(project_dir: Path) -> None:
                 if len(parts) > 1 and parts[1].startswith("gdrive://"):
                     existing_folder_id = parts[1][9:]
                 break
+    else:
+        # If DVC fails to list remotes due to a broken gdrive_remote config, we try to remove it
+        subprocess.run([dvc_bin, "remote", "remove", "--local", "gdrive_remote"], cwd=str(project_dir), capture_output=True)
+        subprocess.run([dvc_bin, "remote", "remove", "gdrive_remote"], cwd=str(project_dir), capture_output=True)
+
 
     folder_id = existing_folder_id
 
-    if not remote_exists:
+    if not folder_id:
         print("🔍 Searching for Google Drive DVC workspace...")
         try:
             from .gdrive import setup_gdrive_workspace, convert_to_oauth2client
@@ -98,18 +98,22 @@ def _setup_gdrive_sync(project_dir: Path) -> None:
         print("❌ Invalid JSON in DVC_GDRIVE_CREDENTIALS or DVC_GDRIVE_TOKEN")
         return
 
-    # 1. Add remote if it doesn't exist
-    if not remote_exists and folder_id:
+    # 1. Add remote if we don't have one or if we needed to discover/re-add the folder_id
+    if folder_id and folder_id != existing_folder_id:
         subprocess.run([dvc_bin, "remote", "add", "-d", "-f", "gdrive_remote", f"gdrive://{folder_id}"],
                        cwd=str(project_dir), capture_output=True)
+    elif not remote_exists and not folder_id:
+        print("❌ Could not configure 'gdrive_remote': folder_id is missing.")
+        return
 
-    # 2. Configure OAuth token locally
-    subprocess.run([dvc_bin, "remote", "modify", "--local", "gdrive_remote", "gdrive_use_service_account", "false"],
-                   cwd=str(project_dir), capture_output=True)
-    subprocess.run([dvc_bin, "remote", "modify", "--local", "gdrive_remote", "gdrive_user_credentials_file", str(creds_file)],
-                   cwd=str(project_dir), capture_output=True)
+    # 2. Configure OAuth token locally (only if remote exists or was just added)
+    if remote_exists or folder_id:
+        subprocess.run([dvc_bin, "remote", "modify", "--local", "gdrive_remote", "gdrive_use_service_account", "false"],
+                       cwd=str(project_dir), capture_output=True)
+        subprocess.run([dvc_bin, "remote", "modify", "--local", "gdrive_remote", "gdrive_user_credentials_file", str(creds_file)],
+                       cwd=str(project_dir), capture_output=True)
 
-    print("✅ Google Drive remote 'gdrive_remote' configured as default.")
+        print("✅ Google Drive remote 'gdrive_remote' configured as default.")
 
 def main() -> None:
     parser = argparse.ArgumentParser(
