@@ -101,13 +101,14 @@ def _setup_gdrive_sync(project_dir: Path) -> None:
         print("❌ Could not configure 'gdrive_remote': folder_id is missing.")
         return
 
-    # 2. Configure OAuth token locally
-    subprocess.run([dvc_bin, "remote", "modify", "--local", "gdrive_remote", "gdrive_use_service_account", "false"],
-                   cwd=str(project_dir), capture_output=True)
-    subprocess.run([dvc_bin, "remote", "modify", "--local", "gdrive_remote", "gdrive_user_credentials_file", str(creds_file)],
-                   cwd=str(project_dir), capture_output=True)
+    # 2. Configure OAuth token locally (only if remote exists or was just added)
+    if remote_exists or folder_id:
+        subprocess.run([dvc_bin, "remote", "modify", "--local", "gdrive_remote", "gdrive_use_service_account", "false"],
+                       cwd=str(project_dir), capture_output=True)
+        subprocess.run([dvc_bin, "remote", "modify", "--local", "gdrive_remote", "gdrive_user_credentials_file", str(creds_file)],
+                       cwd=str(project_dir), capture_output=True)
 
-    print("✅ Google Drive remote 'gdrive_remote' configured as default.")
+        print("✅ Google Drive remote 'gdrive_remote' configured as default.")
 
 def main() -> None:
     parser = argparse.ArgumentParser(
