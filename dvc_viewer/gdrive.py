@@ -10,8 +10,8 @@ logging.getLogger("googleapiclient.discovery_cache").setLevel(logging.ERROR)
 
 def convert_to_oauth2client(creds_data: dict, token_data: dict) -> dict:
     """Convert modern google-auth token to legacy oauth2client format for pydrive2."""
-    client_id = creds_data.get("installed", {}).get("client_id") or creds_data.get("web", {}).get("client_id", "")
-    client_secret = creds_data.get("installed", {}).get("client_secret") or creds_data.get("web", {}).get("client_secret", "")
+    client_id = creds_data.get("installed", {}).get("client_id") or creds_data.get("web", {}).get("client_id") or creds_data.get("client_id", "")
+    client_secret = creds_data.get("installed", {}).get("client_secret") or creds_data.get("web", {}).get("client_secret") or creds_data.get("client_secret", "")
 
     return {
         "access_token": token_data.get("token"),
@@ -57,9 +57,9 @@ def setup_gdrive_workspace(project_dir: Path, creds_str: str, token_str: str) ->
         creds_dict = _parse_json_str(creds_str)
         token_dict = _parse_json_str(token_str)
 
-        client_id = creds_dict.get("installed", {}).get("client_id") or creds_dict.get("web", {}).get("client_id", "")
-        client_secret = creds_dict.get("installed", {}).get("client_secret") or creds_dict.get("web", {}).get("client_secret", "")
-        token_uri = creds_dict.get("installed", {}).get("token_uri") or creds_dict.get("web", {}).get("token_uri", "https://oauth2.googleapis.com/token")
+        client_id = creds_dict.get("installed", {}).get("client_id") or creds_dict.get("web", {}).get("client_id") or creds_dict.get("client_id", "")
+        client_secret = creds_dict.get("installed", {}).get("client_secret") or creds_dict.get("web", {}).get("client_secret") or creds_dict.get("client_secret", "")
+        token_uri = creds_dict.get("installed", {}).get("token_uri") or creds_dict.get("web", {}).get("token_uri") or creds_dict.get("token_uri", "https://oauth2.googleapis.com/token")
 
         creds = Credentials(
             token=token_dict.get("token"),

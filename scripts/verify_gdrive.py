@@ -53,9 +53,9 @@ def verify_gdrive():
         creds_dict = _parse_json_str(creds_str)
         token_dict = _parse_json_str(token_str)
 
-        client_id = creds_dict.get("installed", {}).get("client_id") or creds_dict.get("web", {}).get("client_id", "")
-        client_secret = creds_dict.get("installed", {}).get("client_secret") or creds_dict.get("web", {}).get("client_secret", "")
-        token_uri = creds_dict.get("installed", {}).get("token_uri") or creds_dict.get("web", {}).get("token_uri", "https://oauth2.googleapis.com/token")
+        client_id = creds_dict.get("installed", {}).get("client_id") or creds_dict.get("web", {}).get("client_id") or creds_dict.get("client_id", "")
+        client_secret = creds_dict.get("installed", {}).get("client_secret") or creds_dict.get("web", {}).get("client_secret") or creds_dict.get("client_secret", "")
+        token_uri = creds_dict.get("installed", {}).get("token_uri") or creds_dict.get("web", {}).get("token_uri") or creds_dict.get("token_uri", "https://oauth2.googleapis.com/token")
 
         creds = Credentials(
             token=token_dict.get("token"),
