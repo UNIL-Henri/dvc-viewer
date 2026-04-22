@@ -236,7 +236,6 @@ fi
         bootstrap_script.write_text(bootstrap_content)
         bootstrap_script.chmod(0o755)
         # Attempt to track the file with git automatically
-        import subprocess
         try:
             subprocess.run(["git", "add", str(bootstrap_script)], cwd=str(project_dir), capture_output=True)
         except Exception:
