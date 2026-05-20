@@ -1,0 +1,247 @@
+2026-05-12T10:25:34.4077514Z Current runner version: '2.334.0'
+2026-05-12T10:25:34.4081742Z Runner name: 'cluster-local-UNIL-Henri'
+2026-05-12T10:25:34.4082332Z Runner group name: 'default'
+2026-05-12T10:25:34.4082958Z Machine name: 'isipol09'
+2026-05-12T10:25:34.4085213Z ##[group]GITHUB_TOKEN Permissions
+2026-05-12T10:25:34.4086743Z Contents: read
+2026-05-12T10:25:34.4087160Z Metadata: read
+2026-05-12T10:25:34.4087538Z Packages: read
+2026-05-12T10:25:34.4087977Z ##[endgroup]
+2026-05-12T10:25:34.4089369Z Secret source: Actions
+2026-05-12T10:25:34.4089868Z Prepare workflow directory
+2026-05-12T10:25:34.4393906Z Prepare all required actions
+2026-05-12T10:25:34.4420163Z Getting action download info
+2026-05-12T10:25:34.9165793Z Download action repository 'actions/checkout@v4' (SHA:34e114876b0b11c390a56381ad16ebd13914f8d5)
+2026-05-12T10:25:35.2901785Z Complete job name: Execute Research Pipeline
+2026-05-12T10:25:35.3545724Z ##[group]Run actions/checkout@v4
+2026-05-12T10:25:35.3546358Z with:
+2026-05-12T10:25:35.3546675Z   fetch-depth: 0
+2026-05-12T10:25:35.3547080Z   repository: UNIL-DESI/dvc-viewer
+2026-05-12T10:25:35.3547639Z   token: ***
+2026-05-12T10:25:35.3547980Z   ssh-strict: true
+2026-05-12T10:25:35.3548327Z   ssh-user: git
+2026-05-12T10:25:35.3548692Z   persist-credentials: true
+2026-05-12T10:25:35.3549086Z   clean: true
+2026-05-12T10:25:35.3549449Z   sparse-checkout-cone-mode: true
+2026-05-12T10:25:35.3549877Z   fetch-tags: false
+2026-05-12T10:25:35.3550241Z   show-progress: true
+2026-05-12T10:25:35.3550606Z   lfs: false
+2026-05-12T10:25:35.3550944Z   submodules: false
+2026-05-12T10:25:35.3551304Z   set-safe-directory: true
+2026-05-12T10:25:35.3551853Z ##[endgroup]
+2026-05-12T10:25:35.4464182Z Syncing repository: UNIL-DESI/dvc-viewer
+2026-05-12T10:25:35.4465408Z ##[group]Getting Git version info
+2026-05-12T10:25:35.4466174Z Working directory is '/home/henri/cluster-ci/runners/UNIL-Henri/_work/dvc-viewer/dvc-viewer'
+2026-05-12T10:25:35.4467164Z [command]/usr/bin/git version
+2026-05-12T10:25:35.4467572Z git version 2.25.1
+2026-05-12T10:25:35.4468821Z ##[endgroup]
+2026-05-12T10:25:35.4471860Z Copying '/home/henri/.gitconfig' to '/home/henri/cluster-ci/runners/UNIL-Henri/_work/_temp/71947aee-a6c2-4c6d-be01-be1fa2b787af/.gitconfig'
+2026-05-12T10:25:35.4473533Z Temporarily overriding HOME='/home/henri/cluster-ci/runners/UNIL-Henri/_work/_temp/71947aee-a6c2-4c6d-be01-be1fa2b787af' before making global git config changes
+2026-05-12T10:25:35.4474851Z Adding repository directory to the temporary git global config as a safe directory
+2026-05-12T10:25:35.4477460Z [command]/usr/bin/git config --global --add safe.directory /home/henri/cluster-ci/runners/UNIL-Henri/_work/dvc-viewer/dvc-viewer
+2026-05-12T10:25:35.4515519Z [command]/usr/bin/git config --local --get remote.origin.url
+2026-05-12T10:25:35.4531994Z https://github.com/UNIL-DESI/dvc-viewer
+2026-05-12T10:25:35.4543150Z ##[group]Removing previously created refs, to avoid conflicts
+2026-05-12T10:25:35.4544903Z [command]/usr/bin/git rev-parse --symbolic-full-name --verify --quiet HEAD
+2026-05-12T10:25:35.4561118Z refs/heads/main
+2026-05-12T10:25:35.4573712Z [command]/usr/bin/git checkout --detach
+2026-05-12T10:25:35.4610439Z HEAD is now at b8023f7 feat: add read-only mode for CI environments
+2026-05-12T10:25:35.4643718Z [command]/usr/bin/git branch --delete --force main
+2026-05-12T10:25:35.4667364Z Deleted branch main (was b8023f7).
+2026-05-12T10:25:35.4709286Z ##[endgroup]
+2026-05-12T10:25:35.4712799Z [command]/usr/bin/git submodule status
+2026-05-12T10:25:35.4910844Z ##[group]Cleaning the repository
+2026-05-12T10:25:35.4915237Z [command]/usr/bin/git clean -ffdx
+2026-05-12T10:25:35.4947226Z [command]/usr/bin/git reset --hard HEAD
+2026-05-12T10:25:35.4975781Z HEAD is now at b8023f7 feat: add read-only mode for CI environments
+2026-05-12T10:25:35.4982395Z ##[endgroup]
+2026-05-12T10:25:35.4983753Z ##[group]Disabling automatic garbage collection
+2026-05-12T10:25:35.4988115Z [command]/usr/bin/git config --local gc.auto 0
+2026-05-12T10:25:35.5012501Z ##[endgroup]
+2026-05-12T10:25:35.5014071Z ##[group]Setting up auth
+2026-05-12T10:25:35.5020639Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-05-12T10:25:35.5047158Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-05-12T10:25:35.5251891Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-05-12T10:25:35.5276749Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-05-12T10:25:35.5467788Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-05-12T10:25:35.5495680Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-05-12T10:25:35.5695718Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2026-05-12T10:25:35.5727820Z ##[endgroup]
+2026-05-12T10:25:35.5728998Z ##[group]Fetching the repository
+2026-05-12T10:25:35.5738697Z [command]/usr/bin/git -c protocol.version=2 fetch --prune --no-recurse-submodules origin +refs/heads/*:refs/remotes/origin/* +refs/tags/*:refs/tags/*
+2026-05-12T10:25:36.1508844Z From https://github.com/UNIL-DESI/dvc-viewer
+2026-05-12T10:25:36.1553011Z    b8023f7..18040dd  main       -> origin/main
+2026-05-12T10:25:36.1555387Z [command]/usr/bin/git branch --list --remote origin/main
+2026-05-12T10:25:36.1560004Z   origin/main
+2026-05-12T10:25:36.1567882Z [command]/usr/bin/git rev-parse refs/remotes/origin/main
+2026-05-12T10:25:36.1584525Z 18040dd4f6a63262369f2501f79b3b02f5c71d88
+2026-05-12T10:25:36.1589033Z ##[endgroup]
+2026-05-12T10:25:36.1590257Z ##[group]Determining the checkout info
+2026-05-12T10:25:36.1591642Z ##[endgroup]
+2026-05-12T10:25:36.1592811Z ##[group]Checking out the ref
+2026-05-12T10:25:36.1595682Z [command]/usr/bin/git checkout --progress --force -B main refs/remotes/origin/main
+2026-05-12T10:25:36.1630327Z Previous HEAD position was b8023f7 feat: add read-only mode for CI environments
+2026-05-12T10:25:36.1634520Z Switched to a new branch 'main'
+2026-05-12T10:25:36.1635370Z Branch 'main' set up to track remote branch 'main' from 'origin'.
+2026-05-12T10:25:36.1640982Z ##[endgroup]
+2026-05-12T10:25:36.1677030Z [command]/usr/bin/git log -1 --format=%H
+2026-05-12T10:25:36.1696982Z 18040dd4f6a63262369f2501f79b3b02f5c71d88
+2026-05-12T10:25:36.1885895Z ##[group]Run # Cleanup possible corrupted config from a previously failed run to prevent dvc crashing
+2026-05-12T10:25:36.1887049Z [36;1m# Cleanup possible corrupted config from a previously failed run to prevent dvc crashing[0m
+2026-05-12T10:25:36.1888014Z [36;1mrm -f /home/henri/cluster-ci/repositories/UNIL-Henri/dvc-viewer/.dvc/config[0m
+2026-05-12T10:25:36.1888943Z [36;1mrm -f /home/henri/cluster-ci/repositories/UNIL-Henri/dvc-viewer/.dvc/config.local[0m
+2026-05-12T10:25:36.1905984Z shell: /usr/bin/bash -e {0}
+2026-05-12T10:25:36.1906428Z ##[endgroup]
+2026-05-12T10:25:36.2057195Z ##[group]Run /usr/local/bin/cluster-ci-run "UNIL-DESI/dvc-viewer" "main" "***"
+2026-05-12T10:25:36.2058969Z [36;1m/usr/local/bin/cluster-ci-run "UNIL-DESI/dvc-viewer" "main" "***"[0m
+2026-05-12T10:25:36.2074903Z shell: /usr/bin/bash -e {0}
+2026-05-12T10:25:36.2075308Z ##[endgroup]
+2026-05-12T10:25:36.2140579Z 🌐 Delegation Mode enabled. Submitting job to scheduler...
+2026-05-12T10:25:37.0530686Z 🚀 Submitting job for UNIL-DESI/dvc-viewer@main (Required RAM: 2.0GB)
+2026-05-12T10:25:37.0532741Z ✅ Job submitted successfully! ID: 94c0bf7d-f6cb-440f-a0b0-7f61e18a42f2
+2026-05-12T10:25:37.0534101Z ⏳ Waiting for job 94c0bf7d-f6cb-440f-a0b0-7f61e18a42f2 to complete...
+2026-05-12T10:25:37.0534751Z 
+2026-05-12T10:25:39.0649311Z Status: pending... 
+2026-05-12T10:25:39.0649670Z 
+2026-05-12T10:25:39.0650081Z [Streaming logs from http://130.223.169.200:6000]
+2026-05-12T10:25:39.0651516Z ==========================================================================
+2026-05-12T10:25:39.0652708Z [2026-05-12 12:25:38] ℹ️  CLUSTER-CI: GitOps Runner Orchestration Start
+2026-05-12T10:25:39.0653708Z [2026-05-12 12:25:38] ℹ️     Target Repo   : UNIL-DESI/dvc-viewer
+2026-05-12T10:25:39.0654516Z [2026-05-12 12:25:38] ℹ️     Target Branch : main
+2026-05-12T10:25:39.0655651Z [2026-05-12 12:25:38] ℹ️     Run Folder    : /home/henri/cluster-ci/repositories/UNIL-DESI/dvc-viewer
+2026-05-12T10:25:39.0656556Z ==========================================================================
+2026-05-12T10:25:39.0657372Z [2026-05-12 12:25:38] ℹ️  [Step 1/3] Initializing local cache...
+2026-05-12T10:25:39.0658323Z [2026-05-12 12:25:38] ℹ️  [Step 1.5/3] JIT Garbage Collection (GC) Management...
+2026-05-12T10:25:39.0659157Z 🐳 Cleaning up Docker resources...
+2026-05-12T10:25:39.0659757Z Free space: 3335.90 GB (Threshold: 100 GB)
+2026-05-12T10:25:39.0660372Z Sufficient free space available. No GC needed.
+2026-05-12T10:25:39.0661122Z Project UNIL-DESI/dvc-viewer marked as running.
+2026-05-12T10:25:39.0662195Z [2026-05-12 12:25:38] ℹ️  [Step 2/3] Preventive purge of residual dvc-viewer processes...
+2026-05-12T10:25:39.0663478Z [2026-05-12 12:25:38] ℹ️  [Step 2.1/3] First repository fetch. Cloning in progress...
+2026-05-12T10:25:39.0664361Z Cloning into 'dvc-viewer'...
+2026-05-12T10:25:41.0757695Z [2026-05-12 12:25:39] ℹ️  Synchronizing remote reference origin/main...
+2026-05-12T10:25:41.0758681Z [2026-05-12 12:25:40] ℹ️  Forced branch checkout and re-synchronization...
+2026-05-12T10:25:41.0759294Z Reset branch 'main'
+2026-05-12T10:25:41.0759713Z branch 'main' set up to track 'origin/main'.
+2026-05-12T10:25:41.0760249Z Your branch is up to date with 'origin/main'.
+2026-05-12T10:25:41.0761025Z HEAD is now at 18040dd fix: correctly detect repro command string inside docker bash wrapper
+2026-05-12T10:25:41.0762214Z [2026-05-12 12:25:40] ✅ Git tree synchronized. Artifacts (.dvc/cache etc.) preserved for reuse.
+2026-05-12T10:25:41.0763135Z [2026-05-12 12:25:40] ℹ️  [Step 3/3] Preparing Dockerized execution...
+2026-05-12T10:25:41.0763808Z [2026-05-12 12:25:40] ℹ️  RAM limit detected: 2GB
+2026-05-12T10:25:41.0764292Z [2026-05-12 12:25:40] ℹ️  SHM limit detected: 8g
+2026-05-12T10:25:41.0765120Z [2026-05-12 12:25:40] ℹ️  Docker image changed (none → nvcr.io/nvidia/pytorch:26.04-py3). Purging stale tool cache...
+2026-05-12T10:25:43.0869221Z [2026-05-12 12:25:41] ℹ️  Image used: nvcr.io/nvidia/pytorch:26.04-py3
+2026-05-12T10:25:43.0870071Z [2026-05-12 12:25:41] ℹ️  GPU Hardware Validation...
+2026-05-12T10:25:43.0870635Z CUDA available: True
+2026-05-12T10:25:43.0870985Z GPU Device: NVIDIA GB10
+2026-05-12T10:25:43.0871423Z GPU Memory (CUDA reports): 121.6 GB total, 77.3 GB free
+2026-05-12T10:25:43.0871951Z Compute Capability: 12.1
+2026-05-12T10:25:43.0872585Z [2026-05-12 12:25:43] ℹ️  Preparing smart environment shims (uv/poetry)...
+2026-05-12T10:25:45.1613892Z [2026-05-12 12:25:43] ℹ️  Installing base dependencies in persistent volume...
+2026-05-12T10:25:53.3064308Z [2026-05-12 12:25:52] ℹ️  Reading DVC parameters from .cluster-ci...
+2026-05-12T10:25:53.3065801Z [2026-05-12 12:25:52] ℹ️  Arguments detected: tests verify_gdrive_sync
+2026-05-12T10:25:53.3066559Z [2026-05-12 12:25:52] ℹ️  AST analysis via dvc-viewer...
+2026-05-12T10:25:53.3067229Z 🔍 Scanning dependencies and computing hashes...
+2026-05-12T10:25:53.3067821Z    ➕ Adding 'dvc-code-analysis' stage
+2026-05-12T10:25:53.3068649Z    🔗 Adding dependency to 'verify_gdrive_sync': .dvc-viewer/hashes/verify_gdrive_sync.hash
+2026-05-12T10:25:53.3069446Z    💾 Updating dvc.yaml...
+2026-05-12T10:25:53.3070057Z [2026-05-12 12:25:53] ℹ️  Searching for a free port for dvc-viewer...
+2026-05-12T10:25:53.3070758Z [2026-05-12 12:25:53] ℹ️  Port selected: 37435
+2026-05-12T10:25:53.3071468Z [2026-05-12 12:25:53] ℹ️  Launching live dvc-viewer server on port 37435...
+2026-05-12T10:25:53.3072224Z [2026-05-12 12:25:53] ℹ️  Pre-flight Validation...
+2026-05-12T10:25:55.3180495Z 🚀 [Cluster-CI Shim] Intercepting uv run, executing natively: python3 /cluster-ci/src/runner/validate_pyproject.py --ci
+2026-05-12T10:25:55.3182100Z ℹ️  [Cluster-CI] Fetching latest cluster constraints from GitHub...
+2026-05-12T10:25:55.3182867Z ℹ️  [Cluster-CI] Simulating ARM64 resolution with uv...
+2026-05-12T10:25:55.3183503Z ✅ [Cluster-CI] Resolution simulation passed.
+2026-05-12T10:25:55.3184063Z ✅ [Cluster-CI] Validation complete.
+2026-05-12T10:25:55.3184802Z [2026-05-12 12:25:54] ℹ️  Launching: dvc repro tests verify_gdrive_sync via Docker
+2026-05-12T10:25:57.3293940Z 📦 [Cluster-CI] Dependencies changed (hash: none… → 8f9987a0…). Installing...
+2026-05-12T10:25:57.3294734Z Using CPython 3.12.3 interpreter at: /usr/bin/python
+2026-05-12T10:25:57.3295280Z Resolved 42 packages in 95ms
+2026-05-12T10:25:57.3295714Z    Building dvc-viewer @ file:///workspace
+2026-05-12T10:25:57.3296184Z       Built dvc-viewer @ file:///workspace
+2026-05-12T10:25:57.3296644Z Prepared 2 packages in 333ms
+2026-05-12T10:25:57.3297036Z Installed 42 packages in 8ms
+2026-05-12T10:25:57.3297466Z  + annotated-doc==0.0.4
+2026-05-12T10:25:57.3297820Z  + annotated-types==0.7.0
+2026-05-12T10:25:57.3298201Z  + anyio==4.13.0
+2026-05-12T10:25:57.3298504Z  + certifi==2026.4.22
+2026-05-12T10:25:57.3298824Z  + cffi==2.0.0
+2026-05-12T10:25:57.3299138Z  + charset-normalizer==3.4.7
+2026-05-12T10:25:57.3299507Z  + click==8.3.3
+2026-05-12T10:25:57.3299818Z  + cryptography==48.0.0
+2026-05-12T10:25:57.3300200Z  + dvc-viewer==0.1.0 (from file:///workspace)
+2026-05-12T10:25:57.3300651Z  + fastapi==0.136.1
+2026-05-12T10:25:57.3300971Z  + google-api-core==2.30.3
+2026-05-12T10:25:57.3301371Z  + google-api-python-client==2.196.0
+2026-05-12T10:25:57.3301791Z  + google-auth==2.52.0
+2026-05-12T10:25:57.3302150Z  + google-auth-httplib2==0.4.0
+2026-05-12T10:25:57.3302546Z  + google-auth-oauthlib==1.4.0
+2026-05-12T10:25:57.3302963Z  + googleapis-common-protos==1.75.0
+2026-05-12T10:25:57.3303363Z  + h11==0.16.0
+2026-05-12T10:25:57.3303655Z  + httplib2==0.31.2
+2026-05-12T10:25:57.3303966Z  + httptools==0.7.1
+2026-05-12T10:25:57.3304270Z  + idna==3.14
+2026-05-12T10:25:57.3304564Z  + oauthlib==3.3.1
+2026-05-12T10:25:57.3304878Z  + proto-plus==1.28.0
+2026-05-12T10:25:57.3305214Z  + protobuf==7.35.0rc2
+2026-05-12T10:25:57.3305532Z  + pyasn1==0.6.3
+2026-05-12T10:25:57.3305848Z  + pyasn1-modules==0.4.2
+2026-05-12T10:25:57.3306191Z  + pycparser==3.0
+2026-05-12T10:25:57.3306502Z  + pydantic==2.13.4
+2026-05-12T10:25:57.3306820Z  + pydantic-core==2.46.4
+2026-05-12T10:25:57.3307171Z  + pyparsing==3.3.2
+2026-05-12T10:25:57.3307486Z  + python-dotenv==1.2.2
+2026-05-12T10:25:57.3307822Z  + pyyaml==6.0.3
+2026-05-12T10:25:57.3308116Z  + requests==2.34.0
+2026-05-12T10:25:57.3308446Z  + requests-oauthlib==2.0.0
+2026-05-12T10:25:57.3308812Z  + starlette==1.0.0
+2026-05-12T10:25:57.3309137Z  + typing-extensions==4.15.0
+2026-05-12T10:25:57.3309530Z  + typing-inspection==0.4.2
+2026-05-12T10:25:57.3309896Z  + uritemplate==4.2.0
+2026-05-12T10:25:57.3310222Z  + urllib3==2.7.0
+2026-05-12T10:25:57.3310519Z  + uvicorn==0.46.0
+2026-05-12T10:25:57.3310832Z  + uvloop==0.22.1
+2026-05-12T10:25:57.3311132Z  + watchfiles==1.1.1
+2026-05-12T10:25:57.3311915Z  + websockets==16.0
+2026-05-12T10:25:57.3312406Z ✅ [Cluster-CI] Dependencies installed and cached.
+2026-05-12T10:25:57.3312924Z Running stage 'generate_fake_output':
+2026-05-12T10:25:57.3313524Z > echo "Fake research output generated at $(date)" > fake_output.txt
+2026-05-12T10:25:57.3314128Z Updating lock file 'dvc.lock'
+2026-05-12T10:25:57.3314387Z 
+2026-05-12T10:25:57.3314550Z Running stage 'dvc-code-analysis':
+2026-05-12T10:25:57.3315024Z > bash .dvc-viewer/bootstrap.sh && dvc-viewer hash
+2026-05-12T10:25:57.3315669Z 🔍 Scanning dependencies and computing hashes...
+2026-05-12T10:25:57.3316213Z    ✅ dvc.yaml is up to date
+2026-05-12T10:25:57.3316599Z Updating lock file 'dvc.lock'
+2026-05-12T10:25:57.3316859Z 
+2026-05-12T10:25:57.3317010Z Running stage 'verify_gdrive_sync':
+2026-05-12T10:25:57.3317446Z > python3 scripts/verify_gdrive.py
+2026-05-12T10:25:57.3317965Z ⚙️ Setting up DVC Google Drive remote...
+2026-05-12T10:25:57.3318736Z ❌ ERROR: The DVC remote 'gdrive_remote' was not created.
+2026-05-12T10:25:57.3319772Z    This means the DVC_GDRIVE_CREDENTIALS or DVC_GDRIVE_TOKEN secrets provided to the environment are invalid or incomplete.
+2026-05-12T10:25:57.3320905Z    Please configure real OAuth 2.0 credentials in the repository settings.
+2026-05-12T10:25:57.3321959Z ERROR: failed to reproduce 'verify_gdrive_sync': failed to run: python3 scripts/verify_gdrive.py, exited with 1
+2026-05-12T10:25:59.3426869Z [2026-05-12 12:25:57] ℹ️  Updating metadata (idle status)...
+2026-05-12T10:25:59.3427611Z Project UNIL-DESI/dvc-viewer marked as idle. Size: 1350009 bytes.
+2026-05-12T10:25:59.3430533Z /usr/local/bin/cluster-ci-run: line 94: 2132488 Killed                  docker run --rm --entrypoint "" -v "$(pwd):/workspace" -w /workspace -v "$HOME_CACHE_VOLUME:/home/user" -p "$VIEWER_PORT:$VIEWER_PORT" --ipc=host --pid=host --user "$(id -u):$(id -g)" -e HOME=/home/user $ENV_FILE_FLAG $DOCKER_IMAGE bash -c "export PATH=/home/user/shims:\$PATH:/home/user/.local/bin && dvc-viewer --port $VIEWER_PORT" > "$BASE_DIR/dvc-viewer.log" 2>&1
+2026-05-12T10:25:59.3433335Z 
+2026-05-12T10:25:59.3433782Z ❌ Job 94c0bf7d-f6cb-440f-a0b0-7f61e18a42f2 failed with exit code 255
+2026-05-12T10:25:59.3597073Z ##[error]Process completed with exit code 255.
+2026-05-12T10:25:59.3739183Z Post job cleanup.
+2026-05-12T10:25:59.4502941Z [command]/usr/bin/git version
+2026-05-12T10:25:59.4527569Z git version 2.25.1
+2026-05-12T10:25:59.4552492Z Copying '/home/henri/.gitconfig' to '/home/henri/cluster-ci/runners/UNIL-Henri/_work/_temp/ff54011f-3a74-40bd-ac96-84c81f15f380/.gitconfig'
+2026-05-12T10:25:59.4560290Z Temporarily overriding HOME='/home/henri/cluster-ci/runners/UNIL-Henri/_work/_temp/ff54011f-3a74-40bd-ac96-84c81f15f380' before making global git config changes
+2026-05-12T10:25:59.4562120Z Adding repository directory to the temporary git global config as a safe directory
+2026-05-12T10:25:59.4563656Z [command]/usr/bin/git config --global --add safe.directory /home/henri/cluster-ci/runners/UNIL-Henri/_work/dvc-viewer/dvc-viewer
+2026-05-12T10:25:59.4601337Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-05-12T10:25:59.4635187Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-05-12T10:25:59.4850967Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-05-12T10:25:59.4867546Z http.https://github.com/.extraheader
+2026-05-12T10:25:59.4883731Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+2026-05-12T10:25:59.4916492Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-05-12T10:25:59.5119618Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-05-12T10:25:59.5150691Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-05-12T10:25:59.5489994Z Cleaning up orphan processes
+2026-05-12T10:25:59.5867033Z ##[warning]Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
