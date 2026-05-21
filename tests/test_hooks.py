@@ -77,7 +77,7 @@ def test_hook_runs_successfully(tmp_path, capsys):
     marker = tmp_path / "hook_ran.txt"
     hook_code = textwrap.dedent(f"""\
         from pathlib import Path
-        Path("{marker}").write_text("yes")
+        Path("{marker.as_posix()}").write_text("yes")
         print("Hook executed!")
     """)
     _make_project(tmp_path, hook_code=hook_code)
