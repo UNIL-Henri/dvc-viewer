@@ -8,11 +8,20 @@ to include the hasher stage and hash dependencies.
 from __future__ import annotations
 
 import os
+import sys
 import shutil
 import subprocess
 import yaml
 from pathlib import Path
 from typing import Any
+
+if sys.platform.startswith("win"):
+    try:
+        sys.stdout.reconfigure(encoding='utf-8')
+        sys.stderr.reconfigure(encoding='utf-8')
+    except AttributeError:
+        pass
+
 
 import json
 from .hasher import find_transitive_dependencies, compute_aggregate_hash, compute_per_file_hashes, find_import_chain
@@ -89,6 +98,7 @@ def _get_untracked_files(files: list[str], project_dir: Path) -> set[str]:
             cwd=str(project_dir),
             capture_output=True,
             text=True,
+            encoding="utf-8",
             check=False
         )
         tracked = set(result.stdout.splitlines())
@@ -356,6 +366,7 @@ fi
                 check=True,
                 capture_output=True,
                 text=True,
+                encoding="utf-8",
             )
             if result.stdout.strip():
                 for line in result.stdout.strip().splitlines():
