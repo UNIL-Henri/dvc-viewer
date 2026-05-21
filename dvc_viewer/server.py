@@ -975,6 +975,7 @@ async def file_history(path: str = Query(..., description="Relative file path"))
         result = subprocess.run(
             ["git", "log", "--pretty=format:%H|%s|%an|%ai", "--follow", "--", path],
             capture_output=True, text=True, cwd=str(project), timeout=15,
+            encoding="utf-8"
         )
         if result.returncode != 0:
             return JSONResponse(content={"commits": [], "error": result.stderr.strip()})
@@ -1021,9 +1022,10 @@ async def file_at_commit(
             cwd=str(project),
             timeout=15,
             text=not is_binary,
+            encoding=None if is_binary else "utf-8",
         )
         if result.returncode != 0:
-            error_msg = result.stderr if isinstance(result.stderr, str) else result.stderr.decode()
+            error_msg = result.stderr if isinstance(result.stderr, str) else result.stderr.decode("utf-8", errors="replace")
             return JSONResponse(content={"error": error_msg.strip()}, status_code=404)
 
         if is_binary:
