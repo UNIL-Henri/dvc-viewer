@@ -3340,6 +3340,7 @@
                 _versionHistory = [];
                 _versionIndex = -1;
                 _currentFileType = null;
+                _currentFileExists = true;
                 document.getElementById('version-nav').classList.remove('active');
 
                 // Load file info and history in parallel
@@ -3358,20 +3359,28 @@
                     document.getElementById('modal-icon').textContent = FILE_ICONS[info.type] || '📄';
                     _currentFileType = info.type;
 
+                    _currentFileExists = info.exists;
+
                     // Show version nav if history exists
                     updateVersionNav();
 
                     if (!info.exists) {
-                        const msg = _versionHistory.length > 0
-                            ? 'Current version not on disk. Use the history sidebar to view past versions.'
-                            : 'File not found (output not yet generated?)';
-                        body.innerHTML = `
-                    <div class="file-not-found">
-                        <div class="file-not-found-icon">${_versionHistory.length > 0 ? '🕰️' : '🔍'}</div>
-                        <div class="file-not-found-text">${msg}</div>
-                        <div class="file-not-found-path">${filePath}</div>
-                    </div>`;
-                        return;
+                        if (_versionHistory.length > 0) {
+                            // If the file is not on disk but exists in Git, automatically load the latest commit
+                            _versionIndex = 0;
+                            updateVersionNav();
+                            await loadVersionContent();
+                            return;
+                        } else {
+                            const msg = 'File not found (output not yet generated?)';
+                            body.innerHTML = `
+                        <div class="file-not-found">
+                            <div class="file-not-found-icon">🔍</div>
+                            <div class="file-not-found-text">${msg}</div>
+                            <div class="file-not-found-path">${filePath}</div>
+                        </div>`;
+                            return;
+                        }
                     }
 
                     // In history mode, auto-jump to the commit version
