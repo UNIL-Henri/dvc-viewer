@@ -3201,6 +3201,7 @@
             let _versionIndex = -1;      // -1 = current (working tree), 0 = most recent commit, etc.
             let _currentFilePath = null;
             let _currentFileType = null;
+            let _currentFileExists = true;
 
             async function loadFileHistory(filePath) {
                 try {
