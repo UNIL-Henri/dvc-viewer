@@ -2426,11 +2426,11 @@
                     sections.appendChild(sec);
                 };
 
+                addFileSection('Metrics', data.metrics, 'metric', true);
+                addFileSection('Plots', data.plots, 'plot', true);
                 addFileSection('Dependencies', data.deps, '', false);
                 addFileSection('Outputs', data.outs, '', true);
                 addSection('Parameters', data.params, 'param');
-                addFileSection('Metrics', data.metrics, 'metric', true);
-                addFileSection('Plots', data.plots, 'plot', true);
 
                 // ─── Hydra Config Accordion ───
                 if (data.hydra_config) {
