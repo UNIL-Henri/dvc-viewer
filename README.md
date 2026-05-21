@@ -165,9 +165,11 @@ dvc-viewer/
 - [x] [Isolation des interactions DVC (dvc_client.py)](docs/tasks/fix-rwlock-corruption.md)
 - [x] [Correction coloration graphe et ordre sidebar](docs/tasks/fix_dvc_graph.md)
 - [x] [Mode DVC `--keep-going` (Échecs multiples)](docs/tasks/dvc-keep-going.md)
+- [x] [Visualisation Métriques et Graphes](docs/tasks/visualize_metrics_plots.md)
 - [ ] [Refactoring Front-End : Split `index.html`](docs/tasks/refactor-frontend-split.md)
 - [ ] [Refactoring Backend : Extraction `server.py`](docs/tasks/refactor-server-extraction.md)
 - [ ] [Compléter la couverture de tests](docs/tasks/improve-test-coverage.md)
+
 - [ ] Support pour les pipelines multi-projets
 
 ## 📄 License

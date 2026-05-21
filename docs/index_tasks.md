@@ -6,3 +6,5 @@
 | [Refactoring Front-End](tasks/refactor-frontend-split.md) | Split du monolithe index.html (HTML/CSS/JS) | 2026-03-04 | `Up to date` |
 | [Refactoring Backend](tasks/refactor-server-extraction.md) | Extraction de la logique Hydra et SSE du server.py | 2026-03-04 | `Up to date` |
 | [Couverture de Tests](tasks/improve-test-coverage.md) | Tests unitaires pour dvc_client et parsing SSE | 2026-03-04 | `Up to date` |
+| [Visualisation Métriques et Graphes](tasks/visualize_metrics_plots.md) | Affichage prioritaire des metrics/plots et fallback historique Git pour fichiers non présents localement | 2026-05-21 | `Up to date` |
+
