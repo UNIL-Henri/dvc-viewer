@@ -3246,7 +3246,7 @@
                 // Prev = go to older version (higher index)
                 prevBtn.disabled = (_versionIndex >= _versionHistory.length - 1);
                 // Next = go to newer version (lower index, or back to current)
-                nextBtn.disabled = (_versionIndex === -1);
+                nextBtn.disabled = _currentFileExists ? (_versionIndex === -1) : (_versionIndex === 0);
             }
 
             async function navigateVersion(direction) {
