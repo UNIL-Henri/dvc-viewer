@@ -11,6 +11,13 @@ import os
 import sys
 from pathlib import Path
 
+if sys.platform.startswith("win"):
+    try:
+        sys.stdout.reconfigure(encoding='utf-8')
+        sys.stderr.reconfigure(encoding='utf-8')
+    except AttributeError:
+        pass
+
 
 import json
 import subprocess
@@ -32,7 +39,7 @@ def _setup_gdrive_sync(project_dir: Path) -> None:
     install_dvc_gdrive(dvc_bin)
 
     # Check if remote already exists
-    remote_list = subprocess.run([dvc_bin, "remote", "list"], cwd=str(project_dir), capture_output=True, text=True)
+    remote_list = subprocess.run([dvc_bin, "remote", "list"], cwd=str(project_dir), capture_output=True, text=True, encoding="utf-8")
     remote_exists = False
     existing_folder_id = None
     if remote_list.returncode == 0:
