@@ -22,21 +22,23 @@ def _find_project_python(project_dir: Path) -> str:
     """Resolve the best Python interpreter for the project.
 
     Priority:
-    1. Active virtualenv ($VIRTUAL_ENV/bin/python)
+    1. Active virtualenv ($VIRTUAL_ENV/bin/python or Scripts/python.exe)
     2. Conventional venv directories (.venv, venv, .env, env)
     3. System python3 fallback
     """
     # 1. Active virtualenv
     venv = os.environ.get("VIRTUAL_ENV")
     if venv:
-        candidate = Path(venv) / "bin" / "python"
-        if candidate.exists():
-            return str(candidate)
+        for sub in (Path("bin") / "python", Path("Scripts") / "python.exe", Path("Scripts") / "python"):
+            candidate = Path(venv) / sub
+            if candidate.exists():
+                return str(candidate)
     # 2. Conventional venv directories in project
     for dirname in (".venv", "venv", ".env", "env"):
-        candidate = project_dir / dirname / "bin" / "python"
-        if candidate.exists():
-            return str(candidate)
+        for sub in (Path("bin") / "python", Path("Scripts") / "python.exe", Path("Scripts") / "python"):
+            candidate = project_dir / dirname / sub
+            if candidate.exists():
+                return str(candidate)
     # 3. System fallback
     return shutil.which("python3") or shutil.which("python") or "python3"
 
