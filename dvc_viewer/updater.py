@@ -112,7 +112,7 @@ def _update_stage_hash(
     old_manifest = {}
     if manifest_path.exists():
         try:
-            old_manifest = json.loads(manifest_path.read_text())
+            old_manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
         except Exception:
             pass
     
@@ -170,7 +170,7 @@ def _update_stage_hash(
         "import_graph": {str(k.relative_to(project_dir)): [str(v.relative_to(project_dir)) for v in vs] 
                          for k, vs in import_graph.items()}
     }
-    manifest_path.write_text(json.dumps(new_manifest, indent=2))
+    manifest_path.write_text(json.dumps(new_manifest, indent=2), encoding="utf-8")
     
     return code_hash
 
@@ -232,8 +232,8 @@ elif [ "${CI:-}" = "true" ] || [ "${DVC_VIEWER_AUTO_UPDATE:-}" = "true" ] || [ "
     install_viewer
 fi
 """
-    if not bootstrap_script.exists() or bootstrap_script.read_text() != bootstrap_content:
-        bootstrap_script.write_text(bootstrap_content)
+    if not bootstrap_script.exists() or bootstrap_script.read_text(encoding="utf-8") != bootstrap_content:
+        bootstrap_script.write_text(bootstrap_content, encoding="utf-8")
         bootstrap_script.chmod(0o755)
         # Attempt to track the file with git automatically
         try:
@@ -291,7 +291,7 @@ fi
                     suffix = str(key if key is not None else item)
                     expanded_name = f"{name}@{suffix}"
                     hash_file_path = hash_dir / f"{expanded_name}.hash"
-                    hash_file_path.write_text(code_hash)
+                    hash_file_path.write_text(code_hash, encoding="utf-8")
                 
                 var_name = "key" if isinstance(items, dict) else "item"
                 hash_dep = f".dvc-viewer/hashes/{name}@${{{var_name}}}.hash"
@@ -318,7 +318,7 @@ fi
         # Write hash file
         hash_file_name = f"{name}.hash"
         hash_file_path = hash_dir / hash_file_name
-        hash_file_path.write_text(code_hash)
+        hash_file_path.write_text(code_hash, encoding="utf-8")
         
         # Ensure dependency exists in dvc.yaml
         hash_dep = f".dvc-viewer/hashes/{hash_file_name}"

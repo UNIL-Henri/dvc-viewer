@@ -121,7 +121,7 @@ def is_dvc_process_alive(pid: int) -> bool:
     """Check if a PID is alive AND is a 'dvc repro' process (not PID reuse)."""
     try:
         os.kill(pid, 0)
-    except (ProcessLookupError, PermissionError):
+    except (ProcessLookupError, PermissionError, OSError):
         return False
 
     if sys.platform.startswith("linux"):
