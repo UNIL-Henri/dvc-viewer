@@ -6,24 +6,16 @@ description: Générer un prompt de passation (Handover) narratif pour maintenir
 
 Ce workflow sert à générer un **"Prompt de Passation"** à la fin d'une conversation. L'objectif est de transmettre l'histoire de la session de manière naturelle mais **extrêmement précise**, comme si tu faisais une passation de dossier critique à un collègue.
 
+## Pré-requis : Recherche de Contexte
+
+**OBLIGATOIRE** : Avant de rédiger le handover, tu DOIS effectuer au minimum **1 recherche dans ta mémoire long-terme** (recall, get_recent_memories, ou équivalent) pour récupérer le contexte pertinent de la session et des sessions précédentes. Cela garantit que le handover est complet et précis.
+
 ## Philosophie
 *   **Narratif ET Structuré** : On veut l'histoire, mais aussi les faits durs.
 *   **Contenu Inclus** : ⚠️ **INTERDICTION DE CITER DES ARTEFACTS**. Le prochain agent n'y a PAS accès. Tu dois RÉ-EXPLIQUER ici tout ce qui était dans tes plans ou notes. N'aie pas peur de faire long.
 *   **User-Centric** : Ce sur quoi l'utilisateur a *insisté* est sacré.
 *   **Pas de Plan d'Implémentation** : ⚠️ Tu donnes le but, le brainstorming et les contraintes, mais **JAMAIS le plan d'exécution**. C'est au prochain agent de construire son plan.
-
-## Étape 0 : Compréhension du Scope (OBLIGATOIRE)
-
-**AVANT** de rédiger le handover, tu **DOIS** effectuer au minimum **3 recherches sémantiques** (`semsearch`) pour comprendre le périmètre du travail en cours.
-
-**Pourquoi ?** Un handover sans compréhension du code réel est un handover inutile. Tu ne peux pas transmettre un contexte riche si tu n'as pas exploré le codebase.
-
-**Méthode** :
-1.  Recherche les fichiers modifiés ou concernés par la session.
-2.  Recherche l'architecture autour des composants touchés.
-3.  Recherche les tests ou docs liés pour vérifier la couverture.
-
-**But** : Enrichir ton handover avec des détails concrets (noms de fonctions, patterns utilisés, dépendances) plutôt que des descriptions vagues.
+*   **Pas de Blocs de Code** : ⚠️ **INTERDICTION d'inclure des blocs de code** (``` ou extraits de code). Raisons : (1) le handover est lui-même dans un bloc Markdown, donc imbriquer des blocs casse le rendu, et (2) l'implémentation n'est PAS ton rôle — c'est au prochain agent de décider du code à écrire.
 
 ## Structure du Prompt
 Le prompt doit être généré dans un bloc de code Markdown.
@@ -46,10 +38,10 @@ Liste clairement (tu as le droit aux listes ici pour la clarté) :
 ### 4. La Mission & L'Ordre de Marche
 **CRITIQUE : INSTRUCTIONS OBLIGATOIRES POUR LE PROCHAIN AGENT**
 Tu DOIS inclure ces instructions en gras :
-> **⚠️ ATTENTION : Ne pars PAS directement dans le code. Commence par établir un PLAN d'implémentation clair et soumets-le à l'utilisateur. Discute des détails ambigus AVANT de toucher à quoi que ce soit.**
+> **⚠️ ATTENTION : Ne pars PAS directement dans le code. AVANT TOUTE CHOSE, effectue au minimum 3 recherches (dans ta mémoire long-terme et/ou dans le codebase) pour explorer le projet et comprendre le périmètre. Ensuite, établis un PLAN d'implémentation clair et soumets-le à l'utilisateur. Discute des détails ambigus AVANT de toucher à quoi que ce soit.**
 
-**Référence au fichier de tâche** : Si un fichier de spécification de tâche existe (dans `docs/tasks/`), tu **DOIS** le mentionner explicitement :
-> **📋 Un fichier de spécification existe pour cette tâche : `docs/tasks/[nom-du-fichier].md`. Lis-le en priorité avant de commencer ton plan.**
+**Référence à l'issue GitHub** : Si une issue GitHub existe pour cette tâche, tu **DOIS** la mentionner explicitement avec son numéro :
+> **📋 Une issue GitHub existe pour cette tâche : #[NUMÉRO]. Lis-la en priorité (via `mcp_github-mcp-server_issue_read`) avant de commencer ton plan.**
 
 Donne ensuite le cap général de la mission (le "Quoi", pas le "Comment faire").
 
@@ -67,5 +59,5 @@ On est partis d'un problème de logs muets. On a découvert que `logging_config.
 
 ### Mission
 Finaliser la migration vers les variables d'env pour les logs.
-**⚠️ STOP ! Ne code pas tout de suite. Fais un plan pour valider la structure des variables d'env avec l'utilisateur et confirme pour Loguru.**
+**⚠️ STOP ! Ne code pas tout de suite. Explore d'abord le projet (mémoire long-terme + codebase), puis fais un plan et valide-le avec l'utilisateur. Point bloquant : confirmer avec l'utilisateur s'il veut garder Loguru avant d'aller plus loin.**
 ```
