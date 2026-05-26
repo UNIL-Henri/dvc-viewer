@@ -137,6 +137,12 @@ def main() -> None:
         default=8686,
         help="Port to serve the web interface on (default: 8686)",
     )
+    parser.add_argument(
+        "--host",
+        type=str,
+        default="0.0.0.0",
+        help="Host interface to bind the server on (default: 0.0.0.0)",
+    )
     # Subcommand for internal hashing
     subparsers = parser.add_subparsers(dest="command", help="Subcommands")
     subparsers.add_parser("hash", help="Compute hashes internal command")
@@ -170,13 +176,13 @@ def main() -> None:
     os.environ["DVC_VIEWER_PROJECT_DIR"] = str(project_dir)
 
     print(f"🔍 DVC Viewer — reading pipeline from {dvc_yaml}")
-    print(f"🌐 Starting server at http://localhost:{args.port}")
+    print(f"🌐 Starting server at http://{args.host}:{args.port}")
     print("   Press Ctrl+C to stop.\n")
 
     import uvicorn
     uvicorn.run(
         "dvc_viewer.server:app",
-        host="0.0.0.0",
+        host=args.host,
         port=args.port,
         log_level="warning",
     )
