@@ -23,6 +23,7 @@
 - **Dark theme** — Sleek glassmorphism UI with smooth animations
 - **Concurrent Robustness** — 🛡️ Zero-contention design prevents `rwlock` corruption by monitoring DVC state via the dedicated `dvc_client` module, which performs passive monitoring without triggering internal DVC write-locks.
 - **Zero config** — Just run `dvc-viewer` inside any DVC project
+- **Auto-destruction (Inactivity Self-destruction)** — ☠️ Clean self-destruction after 15 seconds of client inactivity, freeing system memory and TCP ports on calculation nodes automatically.
 
 ## 🚀 Quick Install
 
@@ -166,6 +167,7 @@ dvc-viewer/
 - [x] [Correction coloration graphe et ordre sidebar](docs/tasks/fix_dvc_graph.md)
 - [x] [Mode DVC `--keep-going` (Échecs multiples)](docs/tasks/dvc-keep-going.md)
 - [x] [Visualisation Métriques et Graphes](docs/tasks/visualize_metrics_plots.md)
+- [x] [Mécanisme d'Auto-destruction pour inactivité via Heartbeat](docs/tasks/self-destruction-heartbeat.md)
 - [ ] [Refactoring Front-End : Split `index.html`](docs/tasks/refactor-frontend-split.md)
 - [ ] [Refactoring Backend : Extraction `server.py`](docs/tasks/refactor-server-extraction.md)
 - [ ] [Compléter la couverture de tests](docs/tasks/improve-test-coverage.md)
