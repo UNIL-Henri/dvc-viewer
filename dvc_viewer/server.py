@@ -1067,24 +1067,37 @@ async def file_at_commit(
 # --- Self-destruction & Inactivity Daemon ---
 
 _last_active: float = time.monotonic()
+_first_heartbeat_received: bool = False
 
 @app.get("/api/heartbeat")
 async def heartbeat():
     """Refresh the last active timestamp to prevent self-destruction."""
-    global _last_active
+    global _last_active, _first_heartbeat_received
     _last_active = time.monotonic()
+    _first_heartbeat_received = True
     return {"status": "ok"}
 
 def _inactivity_daemon():
-    """Periodically check for client activity and terminate the process if idle."""
+    """Periodically check for client activity and terminate the process if idle.
+    Grants a generous 120-second grace period at startup until the first client heartbeat is received
+    to accommodate slow AST parses and DVC pipeline resolutions in large scientific repositories.
+    """
     import threading
     # Wait 30 seconds at startup for the client to load and establish the ping loop
     time.sleep(30)
+    startup_time = time.monotonic()
     while True:
-        if time.monotonic() - _last_active > 15:
-            # Self-destruct cleanly by exiting
-            os._exit(0)
+        now = time.monotonic()
+        if not _first_heartbeat_received:
+            # Grant a 120-second grace period after the initial sleep for slow startups
+            if now - startup_time > 120:
+                os._exit(0)
+        else:
+            if now - _last_active > 15:
+                # Self-destruct cleanly by exiting
+                os._exit(0)
         time.sleep(2)
 
 import threading
 threading.Thread(target=_inactivity_daemon, daemon=True).start()
+
