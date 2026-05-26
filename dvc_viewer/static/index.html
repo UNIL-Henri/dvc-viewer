@@ -4091,6 +4091,21 @@
             })();
         })();
     </script>
+    <!-- Heartbeat Ping Loop for Self-destruction -->
+    <script>
+        (function() {
+            function pingHeartbeat() {
+                fetch('api/heartbeat')
+                    .then(res => {
+                        if (!res.ok) console.warn('Heartbeat failed');
+                    })
+                    .catch(err => console.error('Heartbeat connection error:', err));
+            }
+            // Ping immediately on load, then every 5 seconds
+            pingHeartbeat();
+            setInterval(pingHeartbeat, 5000);
+        })();
+    </script>
 </body>
 
 </html>

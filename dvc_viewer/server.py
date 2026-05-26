@@ -1062,3 +1062,29 @@ async def file_at_commit(
         })
     except Exception as e:
         return JSONResponse(content={"error": str(e)}, status_code=500)
+
+
+# --- Self-destruction & Inactivity Daemon ---
+
+_last_active: float = time.monotonic()
+
+@app.get("/api/heartbeat")
+async def heartbeat():
+    """Refresh the last active timestamp to prevent self-destruction."""
+    global _last_active
+    _last_active = time.monotonic()
+    return {"status": "ok"}
+
+def _inactivity_daemon():
+    """Periodically check for client activity and terminate the process if idle."""
+    import threading
+    # Wait 30 seconds at startup for the client to load and establish the ping loop
+    time.sleep(30)
+    while True:
+        if time.monotonic() - _last_active > 15:
+            # Self-destruct cleanly by exiting
+            os._exit(0)
+        time.sleep(2)
+
+import threading
+threading.Thread(target=_inactivity_daemon, daemon=True).start()
