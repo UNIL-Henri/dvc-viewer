@@ -1,99 +1,99 @@
-2026-05-20T18:33:09.9376473Z [command]/usr/bin/git config --global --add safe.directory /home/henri/cluster-ci/runners/slot2/_work/dvc-viewer/dvc-viewer
-2026-05-20T18:33:09.9497253Z Deleting the contents of '/home/henri/cluster-ci/runners/slot2/_work/dvc-viewer/dvc-viewer'
-2026-05-20T18:33:09.9501139Z ##[group]Initializing the repository
-2026-05-20T18:33:09.9504156Z [command]/usr/bin/git init /home/henri/cluster-ci/runners/slot2/_work/dvc-viewer/dvc-viewer
-2026-05-20T18:33:09.9609184Z Initialized empty Git repository in /home/henri/cluster-ci/runners/slot2/_work/dvc-viewer/dvc-viewer/.git/
-2026-05-20T18:33:09.9615244Z [command]/usr/bin/git remote add origin https://github.com/UNIL-DESI/dvc-viewer
-2026-05-20T18:33:09.9699055Z ##[endgroup]
-2026-05-20T18:33:09.9701535Z ##[group]Disabling automatic garbage collection
-2026-05-20T18:33:09.9703722Z [command]/usr/bin/git config --local gc.auto 0
-2026-05-20T18:33:09.9818480Z ##[endgroup]
-2026-05-20T18:33:09.9820852Z ##[group]Setting up auth
-2026-05-20T18:33:09.9863255Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
-2026-05-20T18:33:10.0098090Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
-2026-05-20T18:33:10.2018679Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
-2026-05-20T18:33:10.2100724Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
-2026-05-20T18:33:10.4096083Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
-2026-05-20T18:33:10.4336927Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
-2026-05-20T18:33:10.6566467Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
-2026-05-20T18:33:10.6621233Z ##[endgroup]
-2026-05-20T18:33:10.6623420Z ##[group]Fetching the repository
-2026-05-20T18:33:10.6634441Z [command]/usr/bin/git -c protocol.version=2 fetch --prune --no-recurse-submodules origin +refs/heads/*:refs/remotes/origin/* +refs/tags/*:refs/tags/* +33d2e7d0cb69130aae55132d5cd6085ee068a94f:refs/remotes/pull/22/merge
-2026-05-20T18:33:11.4055755Z From https://github.com/UNIL-DESI/dvc-viewer
-2026-05-20T18:33:11.4077764Z  * [new branch]      auto-sync-drive-3719982639087835291      -> origin/auto-sync-drive-3719982639087835291
-2026-05-20T18:33:11.4082248Z  * [new branch]      ci-gdrive-sync-verify-16203003806831146874 -> origin/ci-gdrive-sync-verify-16203003806831146874
-2026-05-20T18:33:11.4086765Z  * [new branch]      ci/dvc-gdrive-sync-9224970056468221062   -> origin/ci/dvc-gdrive-sync-9224970056468221062
-2026-05-20T18:33:11.4091161Z  * [new branch]      code-cleanup-and-fix-519032975595278174  -> origin/code-cleanup-and-fix-519032975595278174
-2026-05-20T18:33:11.4095919Z  * [new branch]      dvc-gdrive-auto-config-14945521693853982717 -> origin/dvc-gdrive-auto-config-14945521693853982717
-2026-05-20T18:33:11.4100821Z  * [new branch]      feat-gdrive-auto-discovery-210965430101805954 -> origin/feat-gdrive-auto-discovery-210965430101805954
-2026-05-20T18:33:11.4105989Z  * [new branch]      feat/auto-install-bootstrap-682369811858106723 -> origin/feat/auto-install-bootstrap-682369811858106723
-2026-05-20T18:33:11.4111166Z  * [new branch]      feat/gdrive-auto-discovery-9883804366272774328 -> origin/feat/gdrive-auto-discovery-9883804366272774328
-2026-05-20T18:33:11.4127717Z  * [new branch]      fix-ci-gdrive-13727951182653087803       -> origin/fix-ci-gdrive-13727951182653087803
-2026-05-20T18:33:11.4132311Z  * [new branch]      fix-gdrive-auto-sync-oauth-272188202269345197 -> origin/fix-gdrive-auto-sync-oauth-272188202269345197
-2026-05-20T18:33:11.4137609Z  * [new branch]      fix-gdrive-ci-fail-gracefully-5682036071000645029 -> origin/fix-gdrive-ci-fail-gracefully-5682036071000645029
-2026-05-20T18:33:11.4143363Z  * [new branch]      fix-gdrive-json-parsing-13151556734448689530 -> origin/fix-gdrive-json-parsing-13151556734448689530
-2026-05-20T18:33:11.4148485Z  * [new branch]      fix-gdrive-sync-credentials-1055262874690575465 -> origin/fix-gdrive-sync-credentials-1055262874690575465
-2026-05-20T18:33:11.4154220Z  * [new branch]      fix-unbound-local-subprocess-13559672632021223192 -> origin/fix-unbound-local-subprocess-13559672632021223192
-2026-05-20T18:33:11.4159253Z  * [new branch]      fix/gdrive-auto-push-16886483629501648283 -> origin/fix/gdrive-auto-push-16886483629501648283
-2026-05-20T18:33:11.4164168Z  * [new branch]      fix/gdrive-root-folder-sync-12769035088432100336 -> origin/fix/gdrive-root-folder-sync-12769035088432100336
-2026-05-20T18:33:11.4168735Z  * [new branch]      jules-16695301520576033619-ece8b8b4      -> origin/jules-16695301520576033619-ece8b8b4
-2026-05-20T18:33:11.4171893Z  * [new branch]      main                                     -> origin/main
-2026-05-20T18:33:11.4176032Z  * [new branch]      performance-optimize-hydra-config-io-7008798142778596002 -> origin/performance-optimize-hydra-config-io-7008798142778596002
-2026-05-20T18:33:11.4181875Z  * [new branch]      testing-improvement-safe-resolve-6692966673750734747 -> origin/testing-improvement-safe-resolve-6692966673750734747
-2026-05-20T18:33:11.4186221Z  * [new ref]         33d2e7d0cb69130aae55132d5cd6085ee068a94f -> pull/22/merge
-2026-05-20T18:33:11.4191434Z ##[endgroup]
-2026-05-20T18:33:11.4194064Z ##[group]Determining the checkout info
-2026-05-20T18:33:11.4196280Z ##[endgroup]
-2026-05-20T18:33:11.4198304Z ##[group]Checking out the ref
-2026-05-20T18:33:11.4296174Z [command]/usr/bin/git checkout --progress --force refs/remotes/pull/22/merge
-2026-05-20T18:33:11.4456127Z Note: switching to 'refs/remotes/pull/22/merge'.
-2026-05-20T18:33:11.4457548Z 
-2026-05-20T18:33:11.4458732Z You are in 'detached HEAD' state. You can look around, make experimental
-2026-05-20T18:33:11.4461603Z changes and commit them, and you can discard any commits you make in this
-2026-05-20T18:33:11.4464450Z state without impacting any branches by switching back to a branch.
-2026-05-20T18:33:11.4466142Z 
-2026-05-20T18:33:11.4467183Z If you want to create a new branch to retain commits you create, you may
-2026-05-20T18:33:11.4470182Z do so (now or later) by using -c with the switch command. Example:
-2026-05-20T18:33:11.4471735Z 
-2026-05-20T18:33:11.4472319Z   git switch -c <new-branch-name>
-2026-05-20T18:33:11.4473345Z 
-2026-05-20T18:33:11.4473979Z Or undo this operation with:
-2026-05-20T18:33:11.4474900Z 
-2026-05-20T18:33:11.4475398Z   git switch -
-2026-05-20T18:33:11.4476084Z 
-2026-05-20T18:33:11.4477298Z Turn off this advice by setting config variable advice.detachedHead to false
-2026-05-20T18:33:11.4479122Z 
-2026-05-20T18:33:11.4481240Z HEAD is now at 33d2e7d Merge 07b2978ef2ee38bb5102a52deca4939a77cc0c4d into d1366a2ad9939dbf2f7e96b6b8619f7fe45dd421
-2026-05-20T18:33:11.4486770Z ##[endgroup]
-2026-05-20T18:33:11.4658134Z [command]/usr/bin/git log -1 --format=%H
-2026-05-20T18:33:11.4857503Z 33d2e7d0cb69130aae55132d5cd6085ee068a94f
-2026-05-20T18:33:11.5620747Z ##[group]Run # Cleanup possible corrupted config from a previously failed run to prevent dvc crashing
-2026-05-20T18:33:11.5624804Z [36;1m# Cleanup possible corrupted config from a previously failed run to prevent dvc crashing[0m
-2026-05-20T18:33:11.5628206Z [36;1mrm -f /home/henri/cluster-ci/repositories/UNIL-Henri/dvc-viewer/.dvc/config[0m
-2026-05-20T18:33:11.5631471Z [36;1mrm -f /home/henri/cluster-ci/repositories/UNIL-Henri/dvc-viewer/.dvc/config.local[0m
-2026-05-20T18:33:11.5734151Z shell: /usr/bin/bash -e {0}
-2026-05-20T18:33:11.5735496Z ##[endgroup]
-2026-05-20T18:33:11.6259228Z ##[group]Run /usr/local/bin/cluster-ci-run "UNIL-DESI/dvc-viewer" "fix-gdrive-ci-fail-gracefully-5682036071000645029" "***"
-2026-05-20T18:33:11.6264999Z [36;1m/usr/local/bin/cluster-ci-run "UNIL-DESI/dvc-viewer" "fix-gdrive-ci-fail-gracefully-5682036071000645029" "***"[0m
-2026-05-20T18:33:11.6291148Z shell: /usr/bin/bash -e {0}
-2026-05-20T18:33:11.6292446Z ##[endgroup]
-2026-05-20T18:33:11.7035992Z 🌐 Delegation Mode enabled. Submitting job to scheduler...
-2026-05-20T18:33:12.7965904Z ❌ Error: MAX_RUNTIME_HOURS is missing in .cluster-ci. This parameter is mandatory (max 24h).
-2026-05-20T18:33:12.8389319Z ##[error]Process completed with exit code 1.
-2026-05-20T18:33:12.8710619Z Post job cleanup.
-2026-05-20T18:33:13.0694914Z [command]/usr/bin/git version
-2026-05-20T18:33:13.0874712Z git version 2.25.1
-2026-05-20T18:33:13.1018795Z Copying '/home/henri/.gitconfig' to '/home/henri/cluster-ci/runners/slot2/_work/_temp/e2b5c6ba-c9a0-4156-b059-cb0d8d8a8582/.gitconfig'
-2026-05-20T18:33:13.1253983Z Temporarily overriding HOME='/home/henri/cluster-ci/runners/slot2/_work/_temp/e2b5c6ba-c9a0-4156-b059-cb0d8d8a8582' before making global git config changes
-2026-05-20T18:33:13.1270363Z Adding repository directory to the temporary git global config as a safe directory
-2026-05-20T18:33:13.1294950Z [command]/usr/bin/git config --global --add safe.directory /home/henri/cluster-ci/runners/slot2/_work/dvc-viewer/dvc-viewer
-2026-05-20T18:33:13.1496898Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
-2026-05-20T18:33:13.1695770Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
-2026-05-20T18:33:13.3857082Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
-2026-05-20T18:33:13.4015334Z http.https://github.com/.extraheader
-2026-05-20T18:33:13.4018810Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
-2026-05-20T18:33:13.4107354Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
-2026-05-20T18:33:13.6270476Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
-2026-05-20T18:33:13.6388795Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
-2026-05-20T18:33:13.8557911Z Cleaning up orphan processes
-2026-05-20T18:33:13.9990080Z ##[warning]Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+2026-05-20T18:58:24.0843561Z ##[group]Run actions/checkout@v4
+2026-05-20T18:58:24.0844305Z with:
+2026-05-20T18:58:24.0844720Z   fetch-depth: 0
+2026-05-20T18:58:24.0845247Z   repository: UNIL-DESI/dvc-viewer
+2026-05-20T18:58:24.0845937Z   token: ***
+2026-05-20T18:58:24.0846366Z   ssh-strict: true
+2026-05-20T18:58:24.0846824Z   ssh-user: git
+2026-05-20T18:58:24.0847263Z   persist-credentials: true
+2026-05-20T18:58:24.0847746Z   clean: true
+2026-05-20T18:58:24.0848190Z   sparse-checkout-cone-mode: true
+2026-05-20T18:58:24.0848713Z   fetch-tags: false
+2026-05-20T18:58:24.0849156Z   show-progress: true
+2026-05-20T18:58:24.0849598Z   lfs: false
+2026-05-20T18:58:24.0850020Z   submodules: false
+2026-05-20T18:58:24.0850482Z   set-safe-directory: true
+2026-05-20T18:58:24.0851121Z ##[endgroup]
+2026-05-20T18:58:24.1799780Z Syncing repository: UNIL-DESI/dvc-viewer
+2026-05-20T18:58:24.1802607Z ##[group]Getting Git version info
+2026-05-20T18:58:24.1804414Z Working directory is '/home/henri/cluster-ci/runners/admin/_work/dvc-viewer/dvc-viewer'
+2026-05-20T18:58:24.1806833Z [command]/usr/bin/git version
+2026-05-20T18:58:24.1807878Z git version 2.25.1
+2026-05-20T18:58:24.1811029Z ##[endgroup]
+2026-05-20T18:58:24.1816949Z Copying '/home/henri/.gitconfig' to '/home/henri/cluster-ci/runners/admin/_work/_temp/7b175baf-6723-4e76-8b3f-4b20c0c7548e/.gitconfig'
+2026-05-20T18:58:24.1818890Z Temporarily overriding HOME='/home/henri/cluster-ci/runners/admin/_work/_temp/7b175baf-6723-4e76-8b3f-4b20c0c7548e' before making global git config changes
+2026-05-20T18:58:24.1820506Z Adding repository directory to the temporary git global config as a safe directory
+2026-05-20T18:58:24.1821900Z [command]/usr/bin/git config --global --add safe.directory /home/henri/cluster-ci/runners/admin/_work/dvc-viewer/dvc-viewer
+2026-05-20T18:58:24.1849825Z [command]/usr/bin/git config --local --get remote.origin.url
+2026-05-20T18:58:24.1856189Z https://github.com/UNIL-DESI/dvc-viewer
+2026-05-20T18:58:24.1867676Z ##[group]Removing previously created refs, to avoid conflicts
+2026-05-20T18:58:24.1869876Z [command]/usr/bin/git rev-parse --symbolic-full-name --verify --quiet HEAD
+2026-05-20T18:58:24.1885088Z refs/heads/main
+2026-05-20T18:58:24.1897141Z [command]/usr/bin/git checkout --detach
+2026-05-20T18:58:24.1963103Z HEAD is now at d1366a2 Add CI failure logs for debugging
+2026-05-20T18:58:24.2000796Z [command]/usr/bin/git branch --delete --force main
+2026-05-20T18:58:24.2026410Z Deleted branch main (was d1366a2).
+2026-05-20T18:58:24.2033381Z ##[endgroup]
+2026-05-20T18:58:24.2038432Z [command]/usr/bin/git submodule status
+2026-05-20T18:58:24.2224878Z ##[group]Cleaning the repository
+2026-05-20T18:58:24.2228530Z [command]/usr/bin/git clean -ffdx
+2026-05-20T18:58:24.2259095Z [command]/usr/bin/git reset --hard HEAD
+2026-05-20T18:58:24.2286105Z HEAD is now at d1366a2 Add CI failure logs for debugging
+2026-05-20T18:58:24.2291885Z ##[endgroup]
+2026-05-20T18:58:24.2293491Z ##[group]Disabling automatic garbage collection
+2026-05-20T18:58:24.2298358Z [command]/usr/bin/git config --local gc.auto 0
+2026-05-20T18:58:24.2326936Z ##[endgroup]
+2026-05-20T18:58:24.2328397Z ##[group]Setting up auth
+2026-05-20T18:58:24.2334563Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-05-20T18:58:24.2361204Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-05-20T18:58:24.2559292Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-05-20T18:58:24.2587734Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-05-20T18:58:24.2785698Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-05-20T18:58:24.2814936Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-05-20T18:58:24.3008780Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2026-05-20T18:58:24.3043489Z ##[endgroup]
+2026-05-20T18:58:24.3044937Z ##[group]Fetching the repository
+2026-05-20T18:58:24.3056137Z [command]/usr/bin/git -c protocol.version=2 fetch --prune --no-recurse-submodules origin +refs/heads/*:refs/remotes/origin/* +refs/tags/*:refs/tags/* +2257fa4a317fa18feee2b3174fca270c7f34026d:refs/remotes/pull/22/merge
+2026-05-20T18:58:24.8493698Z From https://github.com/UNIL-DESI/dvc-viewer
+2026-05-20T18:58:24.8496771Z  * [new branch]      fix-gdrive-ci-fail-gracefully-5682036071000645029 -> origin/fix-gdrive-ci-fail-gracefully-5682036071000645029
+2026-05-20T18:58:24.8499513Z  * [new ref]         2257fa4a317fa18feee2b3174fca270c7f34026d -> pull/22/merge
+2026-05-20T18:58:24.8517915Z ##[endgroup]
+2026-05-20T18:58:24.8519383Z ##[group]Determining the checkout info
+2026-05-20T18:58:24.8521057Z ##[endgroup]
+2026-05-20T18:58:24.8522462Z ##[group]Checking out the ref
+2026-05-20T18:58:24.8526545Z [command]/usr/bin/git checkout --progress --force refs/remotes/pull/22/merge
+2026-05-20T18:58:24.8563877Z Previous HEAD position was d1366a2 Add CI failure logs for debugging
+2026-05-20T18:58:24.8566680Z HEAD is now at 2257fa4 Merge 1252e160dd1f53c04288ad8a390a8855a29d0ca3 into d1366a2ad9939dbf2f7e96b6b8619f7fe45dd421
+2026-05-20T18:58:24.8570945Z ##[endgroup]
+2026-05-20T18:58:24.8605243Z [command]/usr/bin/git log -1 --format=%H
+2026-05-20T18:58:24.8629204Z 2257fa4a317fa18feee2b3174fca270c7f34026d
+2026-05-20T18:58:24.8837773Z ##[group]Run # Cleanup possible corrupted config from a previously failed run to prevent dvc crashing
+2026-05-20T18:58:24.8840398Z [36;1m# Cleanup possible corrupted config from a previously failed run to prevent dvc crashing[0m
+2026-05-20T18:58:24.8842645Z [36;1mrm -f /home/henri/cluster-ci/repositories/UNIL-Henri/dvc-viewer/.dvc/config[0m
+2026-05-20T18:58:24.8844800Z [36;1mrm -f /home/henri/cluster-ci/repositories/UNIL-Henri/dvc-viewer/.dvc/config.local[0m
+2026-05-20T18:58:24.8862755Z shell: /usr/bin/bash -e {0}
+2026-05-20T18:58:24.8863701Z ##[endgroup]
+2026-05-20T18:58:24.9069270Z ##[group]Run /usr/local/bin/cluster-ci-run "UNIL-DESI/dvc-viewer" "fix-gdrive-ci-fail-gracefully-5682036071000645029" "***"
+2026-05-20T18:58:24.9074999Z [36;1m/usr/local/bin/cluster-ci-run "UNIL-DESI/dvc-viewer" "fix-gdrive-ci-fail-gracefully-5682036071000645029" "***"[0m
+2026-05-20T18:58:24.9098018Z shell: /usr/bin/bash -e {0}
+2026-05-20T18:58:24.9098875Z ##[endgroup]
+2026-05-20T18:58:24.9192873Z 🌐 Delegation Mode enabled. Submitting job to scheduler...
+2026-05-20T18:58:25.5615883Z ❌ Error: MAX_RUNTIME_HOURS is missing in .cluster-ci. This parameter is mandatory (max 24h).
+2026-05-20T18:58:25.5787075Z ##[error]Process completed with exit code 1.
+2026-05-20T18:58:25.6001608Z Post job cleanup.
+2026-05-20T18:58:25.6787974Z [command]/usr/bin/git version
+2026-05-20T18:58:25.6824310Z git version 2.25.1
+2026-05-20T18:58:25.6872596Z Copying '/home/henri/.gitconfig' to '/home/henri/cluster-ci/runners/admin/_work/_temp/68ae985d-3fbe-4abf-90ab-58c7eb68a1b0/.gitconfig'
+2026-05-20T18:58:25.6883748Z Temporarily overriding HOME='/home/henri/cluster-ci/runners/admin/_work/_temp/68ae985d-3fbe-4abf-90ab-58c7eb68a1b0' before making global git config changes
+2026-05-20T18:58:25.6889493Z Adding repository directory to the temporary git global config as a safe directory
+2026-05-20T18:58:25.6897196Z [command]/usr/bin/git config --global --add safe.directory /home/henri/cluster-ci/runners/admin/_work/dvc-viewer/dvc-viewer
+2026-05-20T18:58:25.6931729Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-05-20T18:58:25.6966220Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-05-20T18:58:25.7182913Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-05-20T18:58:25.7199004Z http.https://github.com/.extraheader
+2026-05-20T18:58:25.7214499Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+2026-05-20T18:58:25.7243919Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-05-20T18:58:25.7433018Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-05-20T18:58:25.7466519Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-05-20T18:58:25.7825709Z Cleaning up orphan processes
+2026-05-20T18:58:25.8310151Z ##[warning]Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
