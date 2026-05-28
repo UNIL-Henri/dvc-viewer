@@ -444,6 +444,37 @@ def build_pipeline(project_dir: str | Path) -> Pipeline:
     is_running, running_stage, running_pid = detect_running_stage(
         project_dir, stages_files
     )
+
+    # Resolve foreach stage names: detect_running_stage may return a base
+    # name like "step_X" from the DVC process cmdline, but the DAG nodes
+    # are expanded as "step_X@variant".  Find the first matching variant
+    # that hasn't completed yet (not in dvc.lock or hash changed since
+    # the run started).
+    if is_running and running_stage and running_stage not in stages:
+        foreach_variants = [
+            name for name in stages
+            if name.startswith(running_stage + "@")
+        ]
+        if foreach_variants:
+            # Pick the first variant that is NOT in dvc.lock (never ran)
+            # or whose hashes differ from the pre-run snapshot.
+            resolved = None
+            for variant in foreach_variants:
+                if variant not in lock_data:
+                    resolved = variant
+                    break
+                if _dvc_lock_snapshot and variant in _dvc_lock_snapshot:
+                    if lock_data[variant].get("outs") == _dvc_lock_snapshot[variant].get("outs"):
+                        # Outputs unchanged since snapshot → still pending
+                        resolved = variant
+                        break
+                    # else: outputs changed → stage completed in this run
+                else:
+                    # No snapshot or variant not in snapshot → assume pending
+                    resolved = variant
+                    break
+            running_stage = resolved or foreach_variants[0]
+
     pipeline.is_running = is_running
     pipeline.running_stage = running_stage
     pipeline.running_pid = running_pid
