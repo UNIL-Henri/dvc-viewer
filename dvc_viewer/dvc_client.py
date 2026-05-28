@@ -187,8 +187,43 @@ def detect_running_stage(
     project_dir: str | Path,
     stages_files: dict[str, StageFiles],
 ) -> tuple[bool, str | None, int | None]:
-    """Detect if a DVC run is in progress using rwlock and pgrep."""
+    """Detect if a DVC run is in progress using iterative-status, rwlock and pgrep."""
     project_dir = Path(project_dir)
+
+    # Priority 1: Check iterative-status.json (cluster-ci iterative repro).
+    # This file persists across sequential dvc repro calls, unlike the rwlock
+    # which disappears between stages.
+    iterative_status_path = project_dir / ".dvc" / "tmp" / "iterative-status.json"
+    try:
+        if iterative_status_path.exists():
+            raw = iterative_status_path.read_text(encoding="utf-8").strip()
+            if raw:
+                status = json.loads(raw)
+                if status.get("running"):
+                    pid = status.get("pid")
+                    stage = status.get("stage")
+                    if pid:
+                        try:
+                            os.kill(pid, 0)
+                            # On Linux, verify the process is not a zombie
+                            if sys.platform.startswith("linux"):
+                                stat_path = f"/proc/{pid}/stat"
+                                if os.path.exists(stat_path):
+                                    with open(stat_path, "r") as f:
+                                        stat_parts = f.read().split()
+                                    if len(stat_parts) > 2 and stat_parts[2] == "Z":
+                                        raise ProcessLookupError("zombie")
+                            return True, stage, pid
+                        except (ProcessLookupError, PermissionError, OSError):
+                            # PID is dead or zombie — stale file, clean up
+                            try:
+                                iterative_status_path.unlink()
+                            except OSError:
+                                pass
+    except (json.JSONDecodeError, OSError):
+        pass
+
+    # Priority 2: rwlock file (standard dvc repro)
     rwlock_path = project_dir / ".dvc" / "tmp" / "rwlock"
     live_pid: int | None = None
     running_stage: str | None = None
@@ -245,7 +280,7 @@ def detect_running_stage(
 
                 return True, running_stage, live_pid
 
-    # Fallback to pgrep
+    # Priority 3: Fallback to pgrep
     try:
         pgrep_res = subprocess.run(["pgrep", "-f", "dvc repro"], capture_output=True, text=True, timeout=2)
         if pgrep_res.returncode == 0:
