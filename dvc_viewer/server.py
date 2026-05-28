@@ -1081,6 +1081,10 @@ def _inactivity_daemon():
     """Periodically check for client activity and terminate the process if idle.
     Grants a generous 120-second grace period at startup until the first client heartbeat is received
     to accommodate slow AST parses and DVC pipeline resolutions in large scientific repositories.
+
+    DISABLED in Cluster-CI executor mode: the live viewer runs for the entire job
+    duration and must never self-destruct. The job cleanup trap in
+    run_research_pipeline.sh handles viewer shutdown.
     """
     import threading
     # Wait 30 seconds at startup for the client to load and establish the ping loop
@@ -1099,5 +1103,10 @@ def _inactivity_daemon():
         time.sleep(2)
 
 import threading
-threading.Thread(target=_inactivity_daemon, daemon=True).start()
+# Only enable self-destruct for on-demand/historical viewers (local use, headnode).
+# In Cluster-CI executor mode, the viewer is the "live" viewer tied to an active job
+# and must stay alive for the entire run. The booting proxy page on the headnode
+# doesn't send heartbeats, so the daemon would kill the viewer before any client connects.
+if os.environ.get("CLUSTER_CI_MODE") != "executor":
+    threading.Thread(target=_inactivity_daemon, daemon=True).start()
 
