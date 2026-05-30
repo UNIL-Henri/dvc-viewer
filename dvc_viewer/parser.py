@@ -19,6 +19,7 @@ from .dvc_client import (
     get_dvc_status,
     detect_running_stage,
     StageFiles,
+    safe_read_rwlock,
 )
 from .git_client import git_show_file
 
@@ -456,23 +457,60 @@ def build_pipeline(project_dir: str | Path) -> Pipeline:
             if name.startswith(running_stage + "@")
         ]
         if foreach_variants:
-            # Pick the first variant that is NOT in dvc.lock (never ran)
-            # or whose hashes differ from the pre-run snapshot.
             resolved = None
-            for variant in foreach_variants:
-                if variant not in lock_data:
-                    resolved = variant
-                    break
-                if _dvc_lock_snapshot and variant in _dvc_lock_snapshot:
-                    if lock_data[variant].get("outs") == _dvc_lock_snapshot[variant].get("outs"):
-                        # Outputs unchanged since snapshot → still pending
+            
+            # Try to resolve active variant using DVC's active rwlock first
+            rwlock_path = project_dir / ".dvc" / "tmp" / "rwlock"
+            lock_data_rw = safe_read_rwlock(rwlock_path)
+            if lock_data_rw:
+                write_locks = lock_data_rw.get("write", {})
+                read_locks = lock_data_rw.get("read", {})
+                project_path = project_dir.resolve()
+                
+                # Extract all unique locked files in write locks or read locks
+                locked_files: set[str] = set()
+                # Combining both keys since we want to check all lock targets
+                all_locked_paths = list(write_locks.keys()) + list(read_locks.keys())
+                for locked_path in all_locked_paths:
+                    try:
+                        rel = str(Path(locked_path).resolve().relative_to(project_path))
+                        locked_files.add(rel)
+                    except ValueError:
+                        locked_files.add(locked_path)
+                
+                if locked_files:
+                    # Find which variant has the most overlap with the currently locked files
+                    best_variant = None
+                    best_overlap = 0
+                    for variant in foreach_variants:
+                        files = stages_files.get(variant)
+                        if files:
+                            variant_files = set(files.outs) | set(files.metrics) | set(files.plots) | set(files.deps)
+                            overlap = variant_files & locked_files
+                            if len(overlap) > best_overlap:
+                                best_overlap = len(overlap)
+                                best_variant = variant
+                    if best_variant:
+                        resolved = best_variant
+            
+            # Fallback: Pick the first variant that is NOT in dvc.lock (never ran)
+            # or whose hashes differ from the pre-run snapshot.
+            if resolved is None:
+                for variant in foreach_variants:
+                    if variant not in lock_data:
                         resolved = variant
                         break
-                    # else: outputs changed → stage completed in this run
-                else:
-                    # No snapshot or variant not in snapshot → assume pending
-                    resolved = variant
-                    break
+                    if _dvc_lock_snapshot and variant in _dvc_lock_snapshot:
+                        if lock_data[variant].get("outs") == _dvc_lock_snapshot[variant].get("outs"):
+                            # Outputs unchanged since snapshot → still pending
+                            resolved = variant
+                            break
+                        # else: outputs changed → stage completed in this run
+                    else:
+                        # No snapshot or variant not in snapshot → assume pending
+                        resolved = variant
+                        break
+                        
             running_stage = resolved or foreach_variants[0]
 
     pipeline.is_running = is_running
