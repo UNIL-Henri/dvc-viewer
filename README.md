@@ -22,6 +22,7 @@
 - **Click-to-inspect** — Click any node to view its command, dependencies, and outputs
 - **Dark theme** — Sleek glassmorphism UI with smooth animations
 - **Concurrent Robustness** — 🛡️ Zero-contention design prevents `rwlock` corruption by monitoring DVC state via the dedicated `dvc_client` module, which performs passive monitoring without triggering internal DVC write-locks.
+- **Foreach Stage Resolution** — 🎯 Dynamic resolution of the active DVC `foreach` variant using real-time analysis of the DVC `rwlock` file.
 - **Zero config** — Just run `dvc-viewer` inside any DVC project
 - **Auto-destruction (Inactivity Self-destruction)** — ☠️ Clean self-destruction after 15 seconds of client inactivity, freeing system memory and TCP ports on calculation nodes automatically.
 
